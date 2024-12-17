@@ -14,12 +14,13 @@ Install-WslDistroIfNeeded -DistroName "Ubuntu"
 Write-Log "Starting OpenWebUI setup..." -ForegroundColor Cyan
 Stop-Wsl
 
-$scriptPath = Resolve-Path -Path "$PSScriptRoot\update_open-webui.sh"
-$wslPath = "/mnt/" + ($scriptPath.Path -replace '\\', '/' -replace ':', '').ToLower()
+$wslScriptConfigPath = Convert-ToPath -WindowsPath "$PSScriptRoot\update_open-webui.config.sh"
+Set-ExecutableAttribute -Path $wslScriptConfigPath
 
-Start-CommandWithRetry "wsl chmod +x $wslPath"
-Write-Log "Running script: ${wslPath}..." -ForegroundColor Cyan
-wsl bash -c "$wslPath"
+$wslScriptPath = Convert-ToPath -WindowsPath "$PSScriptRoot\update_open-webui.sh"
+Set-ExecutableAttribute -Path $wslScriptPath
+
+Start-WslScript -Path $wslScriptPath
 
 Write-Host "Launching WSL interactively with Docker status..." -ForegroundColor Cyan
 wsl -e bash -c "docker ps; exec bash"

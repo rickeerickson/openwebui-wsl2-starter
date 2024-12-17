@@ -152,3 +152,26 @@ function Remove-WslDistro {
     Write-Log "Unregistering WSL distro '$DistroName'..." $LEVEL_INFO
     Start-CommandWithRetry "wsl --unregister $DistroName"
 }
+
+function Convert-ToPath {
+    param (
+        [string]$WindowsPath
+    )
+    $resolvedPath = Resolve-Path -Path $WindowsPath
+    return "/mnt/" + ($resolvedPath.Path -replace '\\', '/' -replace ':', '').ToLower()
+}
+
+function Set-ExecutableAttribute {
+    param (
+        [string]$Path
+    )
+    Start-CommandWithRetry "wsl chmod +x $Path"
+}
+
+function Start-WslScript {
+    param (
+        [string]$Path
+    )
+    Write-Log "Running script: ${Path}..." -ForegroundColor Cyan
+    wsl bash -c "$Path"
+}
