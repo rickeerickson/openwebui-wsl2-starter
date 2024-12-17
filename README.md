@@ -18,7 +18,7 @@ This repository provides an automated setup script to install **OpenWebUI** and 
 
 The script reads configuration values from a `config.env` file. You can customize the following settings:
 
-### `config.sh`
+### `update_open-webui.config.sh`
 ```bash
 # Ollama Configuration
 OLLAMA_HOST_PORT=11434
@@ -31,7 +31,7 @@ OPEN_WEBUI_HOST="localhost"
 OPEN_WEBUI_CONTAINER_TAG="latest"
 ```
 
-- Edit the `config.sh` file to suit your network or container requirements.
+- Edit the `update_open-webui.config.sh` file to suit your network or container requirements.
 
 ## Usage
 

@@ -19,7 +19,7 @@ source_required_file() {
 
 project_root="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 project_env_sh="${project_root}/bash/common/repo_env.sh"
-config_file="${project_root}/config.sh"
+config_file="${project_root}/update_open-webui.config.sh"
 
 source_required_file "${project_env_sh}"
 source_required_file "${config_file}"
