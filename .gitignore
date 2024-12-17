@@ -1,0 +1,79 @@
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE/editor specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+_ReSharper*/
+
+# Build artifacts (Visual Studio, Rust, general)
+# Visual Studio
+*.obj
+*.exe
+*.pdb
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.ilk
+*.sbr
+*.lib
+[Bb]in/
+[Dd]ebug*/
+[Rr]elease*/
+.vs/
+obj/
+packages/
+
+# Rust
+/target/
+
+# Node.js tooling
+node_modules/
+
+# Temporary and debugging files
+*.tmp
+*.temp
+*.stackdump
+*.log
+*.dSYM/
+[Tt]est[Rr]esult*
+
+# Environment files
+.env
+.env.local
+
+# Coverage and testing artifacts
+/coverage/
+/tests/output/
+
+# Compiled binaries
+*.o
+*.so
+*.dylib
+*.exe
+
+# Kubernetes-related files
+k8s/kubectl
+k8s/kubectl.sha256
+kubectl
+kubectl.sha256
+
+# Ignore Rustup components not part of the project itself
+/.rustup/
+CACHEDIR.TAG
+.rustc_info.json
+
+# runbooks
+*.docx
+abc/runbooks/Consolidated_Runbooks_For_ChatGPT.txt
