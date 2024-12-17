@@ -21,8 +21,5 @@ Start-CommandWithRetry "wsl chmod +x $wslPath"
 Write-Log "Running script: ${wslPath}..." -ForegroundColor Cyan
 wsl bash -c "$wslPath"
 
-Write-Log "Launching WSL and checking Docker status..." -ForegroundColor Cyan
-Start-CommandWithRetry "wsl bash -c 'docker ps'"
-
 Write-Host "Launching WSL interactively with Docker status..." -ForegroundColor Cyan
 wsl -e bash -c "docker ps; exec bash"
