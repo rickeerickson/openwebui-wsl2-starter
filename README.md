@@ -29,6 +29,12 @@ OLLAMA_CONTAINER_TAG="latest"
 OPEN_WEBUI_HOST_PORT=3000
 OPEN_WEBUI_HOST="localhost"
 OPEN_WEBUI_CONTAINER_TAG="latest"
+
+# Default Ollama Models
+DEFAULT_OLLAMA_MODELS=(
+    "codegemma:7b"
+    "gemma2:9b"
+)
 ```
 
 - Edit the `update_open-webui.config.sh` file to suit your network or container requirements.
