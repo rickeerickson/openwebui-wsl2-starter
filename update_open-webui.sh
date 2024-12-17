@@ -40,6 +40,7 @@ pull_docker_image "ollama/ollama" "${OLLAMA_CONTAINER_TAG}"
 ensure_port_available "${OLLAMA_HOST_PORT}"
 run_ollama_container "${OLLAMA_HOST}" "${OLLAMA_HOST_PORT}" "${OLLAMA_CONTAINER_TAG}"
 verify_ollama_setup "${OLLAMA_HOST}" "${OLLAMA_HOST_PORT}"
+pull_ollama_models
 
 pull_docker_image "ghcr.io/open-webui/open-webui" "${OPEN_WEBUI_CONTAINER_TAG}"
 ensure_port_available "${OPEN_WEBUI_HOST_PORT}"

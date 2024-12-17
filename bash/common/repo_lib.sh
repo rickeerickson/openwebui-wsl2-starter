@@ -410,3 +410,28 @@ install_nvidia_container_toolkit() {
     run_command_with_retry "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit"
     verify_nvidia_environment
 }
+
+pull_ollama_models() {
+    source "$(dirname "${BASH_SOURCE[0]}")/default_ollama_models.sh"
+
+    local models=("${DEFAULT_OLLAMA_MODELS[@]}")  # Copy default models
+
+    log_message "Fetching installed models..." "${LEVEL_INFO}"
+    local installed_models
+    installed_models=$(ollama list | awk '{if(NR>1) print $1}')
+
+    log_message "Adding installed models to predefined list..." "${LEVEL_INFO}"
+    for model in $installed_models; do
+        if [[ ! " ${models[@]} " =~ " ${model} " ]]; then
+            models+=("$model")
+        fi
+    done
+
+    log_message "Pulling models for Ollama..." "${LEVEL_INFO}"
+    for model in "${models[@]}"; do
+        log_message "Pulling model: $model" "${LEVEL_INFO}"
+        run_command_with_retry "ollama pull $model"
+    done
+
+    log_message "Model pulling completed." "${LEVEL_INFO}"
+}
