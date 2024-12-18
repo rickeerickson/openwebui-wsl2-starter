@@ -93,7 +93,7 @@ run_command() {
     fi
 
     log_message "${prefix}Executing command: ${command}" "${LEVEL_INFO}"
-    log_message "${prefix}Executing command: ${command} with debug mode: ${debug_mode}, should_fail: ${should_fail}, ignore_exit_status: ${ignore_exit_status}" "${LEVEL_DEBUG_1}"
+    log_message "${prefix}Executing command: ${command} with debug_mode=\"${debug_mode}\", should_fail=\"${should_fail}\", ignore_exit_status=\"${ignore_exit_status}\" prefix=\"${prefix}\"" "${LEVEL_DEBUG_1}"
 
     disable_exit_on_failure_and_pipefail
 
@@ -109,12 +109,12 @@ run_command() {
         log_message "${prefix}${line}"
     done
 
-    if [[ "${command_exit_status}" -ne 0 ]]; then
-        if [[ "${ignore_exit_status}" == "true" ]]; then
-            log_message "${prefix}${command} failed with exit code ${command_exit_status}, but ignoring exit status." "${LEVEL_WARNING}"
-            return 0
-        fi
+    if [[ "${ignore_exit_status}" == "true" ]]; then
+        log_message "${prefix}${command} exitted with code ${command_exit_status}, ignoring exit status." "${LEVEL_WARNING}"
+        return 0
+    fi
 
+    if [[ "${command_exit_status}" -ne 0 ]]; then
         if [[ "${should_fail}" == "true" ]]; then
             log_message "${prefix}${command} failed as expected with exit code ${command_exit_status}." "${LEVEL_INFO}"
             return "${command_exit_status}"
