@@ -92,7 +92,8 @@ run_command() {
         prefix="${command} :: "
     fi
 
-    log_message "${prefix}Executing command: ${command}" "${LEVEL_DEBUG_1}"
+    log_message "${prefix}Executing command: ${command}" "${LEVEL_INFO}"
+    log_message "${prefix}Executing command: ${command} with debug mode: ${debug_mode}, should_fail: ${should_fail}, ignore_exit_status: ${ignore_exit_status}" "${LEVEL_DEBUG_1}"
 
     disable_exit_on_failure_and_pipefail
 
@@ -110,7 +111,7 @@ run_command() {
 
     if [[ "${command_exit_status}" -ne 0 ]]; then
         if [[ "${ignore_exit_status}" == "true" ]]; then
-            log_message "${prefix}Command failed with exit code ${command_exit_status}, but ignoring exit status." "${LEVEL_WARNING}"
+            log_message "${prefix}${command} failed with exit code ${command_exit_status}, but ignoring exit status." "${LEVEL_WARNING}"
             return 0
         fi
 
@@ -547,9 +548,19 @@ verify_open_webui_setup() {
 install_nvidia_container_toolkit() {
     log_message "Installing NVIDIA Container Toolkit..." "${LEVEL_INFO}"
 
-    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    # Download the NVIDIA GPG key and add it to the apt keyring
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+        sudo gpg --dearmor --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+    # Add the NVIDIA repository with the signed-by option
     curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+        sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
         sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
+
+    # Explicitly import the GPG key into the trusted keyring to avoid NO_PUBKEY errors
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys DDCAE044F796ECB0
+
+    # Update the package lists and install the toolkit
     run_command_with_retry "sudo apt-get update"
     run_command_with_retry "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit"
     verify_nvidia_environment
