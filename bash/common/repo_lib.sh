@@ -82,10 +82,10 @@ pad_right() {
 
 run_command() {
     local command="$1"
-    local saved_opts="${2:-}"
-    local debug_mode="${DEBUG:-false}"
+    local ignore_exit_status="${2:-false}"
     local should_fail="${3:-false}"
-    local ignore_exit_status="${4:-false}"
+    local saved_opts="${4:-}"
+    local debug_mode="${DEBUG:-false}"
     local prefix=" "
 
     if [[ "${debug_mode}" == "true" ]]; then
@@ -93,7 +93,7 @@ run_command() {
     fi
 
     log_message "${prefix}Executing command: ${command}" "${LEVEL_INFO}"
-    log_message "${prefix}Executing command: ${command} with debug_mode=\"${debug_mode}\", should_fail=\"${should_fail}\", ignore_exit_status=\"${ignore_exit_status}\" prefix=\"${prefix}\"" "${LEVEL_DEBUG_1}"
+    log_message "${prefix}Executing command: ${command} with ignore_exit_status=\"${ignore_exit_status}\", should_fail=\"${should_fail}\", debug_mode=\"${debug_mode}\"" "${LEVEL_DEBUG_1}"
 
     disable_exit_on_failure_and_pipefail
 
@@ -149,7 +149,7 @@ run_command_with_retry() {
         saved_opts=$(get_shell_options)
 
         local command_exit_status
-        run_command "${command}" "${saved_opts}" "${should_fail}" "${ignore_exit_status}"
+        run_command "${command}" "${ignore_exit_status}" "${should_fail}" "${saved_opts}"
         command_exit_status=$?
 
         if [[ "${command_exit_status}" -eq 0 ]]; then
@@ -278,7 +278,10 @@ wait_for_container_status_up() {
 
     while true; do
         local status
-        run_command "docker ps --filter \"name=${container_name}\" --format \"{{.Status}}\" | head -n 1" "" false false true
+
+        local should_fail=false
+        local ignore_exit_status=true
+        run_command "docker ps --filter \"name=${container_name}\" --format \"{{.Status}}\" | head -n 1" "${ignore_exit_status}" "${should_fail}"
         status=$(docker ps --filter "name=${container_name}" --format "{{.Status}}" | head -n 1)
 
         if [[ $status == Up* ]]; then
@@ -304,7 +307,6 @@ try_stop_container() {
     local container_name="$1"
 
     log_message "Stopping container '${container_name}'..." "${LEVEL_INFO}"
-
     run_command_with_retry "docker stop ${container_name}"
 }
 
@@ -315,10 +317,13 @@ container_is_stopped() {
 
     log_message "Checking if container '${container_name}' is stopped and exited..." "${LEVEL_INFO}"
 
-    run_command "docker ps --filter \"name=${container_name}\" --format \"{{.Names}}\" | grep -q \"^${container_name}$\"" "" false false true
+    local should_fail=false
+    local ignore_exit_status=true
+
+    run_command "docker ps --filter \"name=${container_name}\" --format \"{{.Names}}\" | grep -q \"^${container_name}$\"" "${ignore_exit_status}" "${should_fail}"
     running_check=$(docker ps --filter "name=${container_name}" --format "{{.Names}}" | grep -q "^${container_name}$")
 
-    run_command "docker ps -a --filter \"name=${container_name}\" --filter \"status=exited\" --format \"{{.Names}}\" | grep -q \"^${container_name}$\"" "" false false true
+    run_command "docker ps -a --filter \"name=${container_name}\" --filter \"status=exited\" --format \"{{.Names}}\" | grep -q \"^${container_name}$\"" "${ignore_exit_status}" "${should_fail}"
     exited_check=$(docker ps -a --filter "name=${container_name}" --filter "status=exited" --format "{{.Names}}" | grep -q "^${container_name}$")
 
     if $running_check && $exited_check; then

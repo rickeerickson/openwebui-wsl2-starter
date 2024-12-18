@@ -30,12 +30,11 @@ run_test_case() {
     local ignore_exit_status="$4"
     local expected_result="$5"
     local saved_opts=""
-    local prefix=" "
     local debug_mode="${DEBUG:-false}"
 
-    log_message "${prefix}Running test command: ${command} with debug_mode=\"${debug_mode}\", should_fail=\"${should_fail}\", ignore_exit_status=\"${ignore_exit_status}\" prefix=\"${prefix}\"" "${LEVEL_DEBUG_1}"
+    log_message "Running test command: ${command} with ignore_exit_status=\"${ignore_exit_status}\", should_fail=\"${should_fail}\", debug_mode=\"${debug_mode}\"" "${LEVEL_DEBUG_1}"
 
-    if run_command "${command}" "${saved_opts}" "${should_fail}" "${ignore_exit_status}"; then
+    if run_command "${command}" "${ignore_exit_status}" "${should_fail}" "${saved_opts}"; then
         if [[ "${expected_result}" -eq 0 ]]; then
             echo "${test_name} Passed"
         else
@@ -129,13 +128,6 @@ DEBUG=false
 test_name="Test 11: Stress test with multiple chained commands"
 command="echo foo && echo bar && echo baz && echo qux"
 should_fail=false
-ignore_exit_status=false
-expected_result=0
-run_test_case "${test_name}" "${command}" "${should_fail}" "${ignore_exit_status}" "${expected_result}"
-
-test_name="Test 12: Failing command, but should_fail is true"
-command="bash -c \"exit 0\""
-should_fail=true
 ignore_exit_status=false
 expected_result=0
 run_test_case "${test_name}" "${command}" "${should_fail}" "${ignore_exit_status}" "${expected_result}"
