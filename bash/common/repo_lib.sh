@@ -482,16 +482,16 @@ stop_remove_run_ollama_container() {
     if ! docker run -d \
         --gpus all \
         --network=host \
-        --volume ollama:/root/.ollama \
+        --volume "${OLLAMA_VOLUME_NAME}:/root/.ollama" \
         --env OLLAMA_HOST="${host}" \
         --restart always \
-        --name ollama \
+        --name "${OLLAMA_CONTAINER_NAME}" \
         "ollama/ollama:${container_tag}"; then
         log_message "Failed to start Ollama container." "${LEVEL_ERROR}"
         return 1
     fi
 
-    wait_for_container_status_up "ollama" || return 1
+    wait_for_container_status_up "${OLLAMA_CONTAINER_NAME}" || return 1
     log_message "Ollama container started successfully." "${LEVEL_INFO}"
 }
 
@@ -504,23 +504,23 @@ stop_remove_run_open_webui_container() {
 
     log_message "Stopping and removing Open-WebUI container..." "${LEVEL_INFO}"
 
-    stop_and_remove_container "open-webui" || return 1
+    stop_and_remove_container "${OPEN_WEBUI_CONTAINER_NAME}" || return 1
 
     log_message "Running Open-WebUI container..." "${LEVEL_INFO}"
     if ! docker run -d \
         --gpus all \
         --network=host \
-        --volume open-webui:/app/backend/data \
+        --volume "${OPEN_WEBUI_VOLUME_NAME}:/app/backend/data" \
         --env OLLAMA_BASE_URL=${ollama_url} \
         --env PORT=${open_webui_port} \
-        --name open-webui \
+        --name "${OPEN_WEBUI_CONTAINER_NAME}" \
         --restart always \
         "ghcr.io/open-webui/open-webui:${container_tag}"; then
         log_message "Failed to start Open-WebUI container." "${LEVEL_ERROR}"
         return 1
     fi
 
-    wait_for_container_status_up "open-webui" || return 1
+    wait_for_container_status_up "${OPEN_WEBUI_CONTAINER_NAME}" || return 1
     log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
 }
 
@@ -545,7 +545,7 @@ verify_open_webui_setup() {
     fi
 
     run_command_with_retry "curl -s -o /dev/null --write-out \"%{response_code}\n\" ${url}"
-    run_command_with_retry "docker logs open-webui"
+    run_command_with_retry "docker logs \"${OPEN_WEBUI_CONTAINER_NAME}\""
 
     log_message "Open-WebUI setup verified successfully." "${LEVEL_INFO}"
 }
