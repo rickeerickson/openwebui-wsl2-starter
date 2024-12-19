@@ -11,7 +11,7 @@ This repository provides an automated setup script to install **OpenWebUI** and 
 
 ## Prerequisites
 
-- **Windows 10/11** with WSL2 enabled.
+- Windows 10/11
 - Administrative privileges to run the setup script.
 
 ## Configuration
