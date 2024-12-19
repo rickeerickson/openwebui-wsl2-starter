@@ -16,7 +16,7 @@ This repository provides an automated setup script to install **OpenWebUI** and 
 
 ## Configuration
 
-The script reads configuration values from a `config.env` file. You can customize the following settings:
+The script reads configuration values from a `update_open-webui.config.sh` file. You can customize the following settings:
 
 ### `update_open-webui.config.sh`
 ```bash
@@ -55,14 +55,14 @@ DEFAULT_OLLAMA_MODELS=(
    - The script will:
      1. Ensure WSL2 and Ubuntu are set up.
      2. Configure Docker and NVIDIA container tools.
-     3. Deploy **Ollama** and **OpenWebUI** using the settings in `config.env`.
+     3. Deploy **Ollama** and **OpenWebUI** using the settings in `update_open-webui.config.sh`.
 
 3. **Verify**:
    - The script will launch WSL interactively and display `docker ps` to confirm that containers are running.
 
 ## Customization
 
-- Update the `config.env` file to change ports or container tags.
+- Update the `update_open-webui.config.sh` file to change container configuration.
 - Restart the setup to apply changes:
    ```powershell
    .\Setup-OpenWebUI.ps1
@@ -90,7 +90,7 @@ The setup logs are stored in a file adjacent to the running script:
 ## Troubleshooting
 
 1. **Port Conflicts**:
-   - Ensure the ports configured in `config.env` are available.
+   - Ensure the ports configured in `update_open-webui.config.sh` are available.
    - Use the following to identify processes using a port:
      ```bash
      sudo lsof -i :<PORT>
