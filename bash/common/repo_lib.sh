@@ -470,29 +470,67 @@ pull_docker_image() {
 }
 
 stop_remove_run_ollama_container() {
-    local host="$1"
-    local port="$2"
-    local container_tag="${3:-latest}"
+    local host="${1:-$OLLAMA_HOST}"
+    local port="${2:-$OLLAMA_HOST_PORT}"
+    local container_tag="${3:-$OLLAMA_CONTAINER_TAG}"
+    local container_name="${4:-$OLLAMA_CONTAINER_NAME}"
+    local volume_name="${5:-$OLLAMA_VOLUME_NAME}"
 
     log_message "Stopping and removing Ollama container..." "${LEVEL_INFO}"
 
-    stop_and_remove_container "ollama" || return 1
+    stop_and_remove_container "${container_name}" || return 1
+    ensure_ollama_running $host $port $container_tag $container_name $volume_name || return 1
 
-    log_message "Running Ollama container..." "${LEVEL_INFO}"
-    if ! docker run -d \
-        --gpus all \
-        --network=host \
-        --volume "${OLLAMA_VOLUME_NAME}:/root/.ollama" \
-        --env OLLAMA_HOST="${host}" \
-        --restart always \
-        --name "${OLLAMA_CONTAINER_NAME}" \
-        "ollama/ollama:${container_tag}"; then
-        log_message "Failed to start Ollama container." "${LEVEL_ERROR}"
-        return 1
-    fi
-
-    wait_for_container_status_up "${OLLAMA_CONTAINER_NAME}" || return 1
+    wait_for_container_status_up "${container_name}" || return 1
     log_message "Ollama container started successfully." "${LEVEL_INFO}"
+}
+
+ensure_ollama_running() {
+    local host="${1:-$OLLAMA_HOST}"
+    local port="${2:-$OLLAMA_HOST_PORT}"
+    local container_tag="${3:-$OLLAMA_CONTAINER_TAG}"
+    local container_name="${4:-$OLLAMA_CONTAINER_NAME}"
+    local volume_name="${5:-$OLLAMA_VOLUME_NAME}"
+
+    local retry_count=0
+    local max_retries=5
+    local fib1=1
+    local fib2=1
+
+    log_message "Checking if Ollama container is running..." "${LEVEL_INFO}"
+
+    while (( retry_count < max_retries )); do
+        if docker ps --filter "name=${container_name}" --filter "status=running" --format "{{.Names}}" | grep -q "${container_name}"; then
+            log_message "Ollama container is already running." "${LEVEL_INFO}"
+            return 0
+        else
+            log_message "Attempting to start Ollama container (Attempt $((retry_count + 1))/${max_retries})..." "${LEVEL_WARNING}"
+            if docker run -d \
+                --gpus all \
+                --network=host \
+                --volume "${volume_name}:/root/.ollama" \
+                --env OLLAMA_HOST="${host}" \
+                --restart always \
+                --name "${container_name}" \
+                "ollama/ollama:${container_tag}"; then
+                wait_for_container_status_up "${container_name}" && {
+                    log_message "Ollama container started successfully." "${LEVEL_INFO}"
+                    return 0
+                }
+            fi
+        fi
+
+        local delay=$fib1
+        log_message "Retrying in ${delay} seconds..." "${LEVEL_WARNING}"
+        sleep "${delay}"
+        local next_delay=$((fib1 + fib2))
+        fib1=$fib2
+        fib2=$next_delay
+        ((retry_count++))
+    done
+
+    log_message "Failed to start Ollama container after ${max_retries} attempts." "${LEVEL_ERROR}"
+    return 1
 }
 
 stop_remove_run_open_webui_container() {
