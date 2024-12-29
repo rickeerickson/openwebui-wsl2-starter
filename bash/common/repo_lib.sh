@@ -471,7 +471,7 @@ pull_docker_image() {
 
 stop_remove_run_ollama_container() {
     local host="${1:-$OLLAMA_HOST}"
-    local port="${2:-$OLLAMA_HOST_PORT}"
+    local port="${2:-$OLLAMA_PORT}"
     local container_tag="${3:-$OLLAMA_CONTAINER_TAG}"
     local container_name="${4:-$OLLAMA_CONTAINER_NAME}"
     local volume_name="${5:-$OLLAMA_VOLUME_NAME}"
@@ -487,7 +487,7 @@ stop_remove_run_ollama_container() {
 
 ensure_ollama_running() {
     local host="${1:-$OLLAMA_HOST}"
-    local port="${2:-$OLLAMA_HOST_PORT}"
+    local port="${2:-$OLLAMA_PORT}"
     local container_tag="${3:-$OLLAMA_CONTAINER_TAG}"
     local container_name="${4:-$OLLAMA_CONTAINER_NAME}"
     local volume_name="${5:-$OLLAMA_VOLUME_NAME}"
@@ -534,31 +534,34 @@ ensure_ollama_running() {
 }
 
 stop_remove_run_open_webui_container() {
-    local ollama_host="$1"
-    local ollama_port="$2"
-    local open_webui_port="$3"
-    local container_tag="${4:-latest}"
+    local ollama_host="${1:-OLLAMA_HOST}"
+    local ollama_port="${2:-OLLAMA_PORT}"
+    local open_webui_port="${3:-OPEN_WEBUI_PORT}"
+    local open_webui_container_tag="${4:-OPEN_WEBUI_CONTAINER_TAG}"
+    local open_webui_container_name="${5:-OPEN_WEBUI_CONTAINER_NAME}"
+    local open_webui_volume_name="${6:-OPEN_WEBUI_VOLUME_NAME}"
+
     local ollama_url="http://${ollama_host}:${ollama_port}"
 
     log_message "Stopping and removing Open-WebUI container..." "${LEVEL_INFO}"
 
-    stop_and_remove_container "${OPEN_WEBUI_CONTAINER_NAME}" || return 1
+    stop_and_remove_container "${open_webui_container_name}" || return 1
 
     log_message "Running Open-WebUI container..." "${LEVEL_INFO}"
     if ! docker run -d \
         --gpus all \
         --network=host \
-        --volume "${OPEN_WEBUI_VOLUME_NAME}:/app/backend/data" \
+        --volume "${open_webui_volume_name}:/app/backend/data" \
         --env OLLAMA_BASE_URL=${ollama_url} \
         --env PORT=${open_webui_port} \
-        --name "${OPEN_WEBUI_CONTAINER_NAME}" \
+        --name "${open_webui_container_name}" \
         --restart always \
-        "ghcr.io/open-webui/open-webui:${container_tag}"; then
+        "ghcr.io/open-webui/open-webui:${open_webui_container_tag}"; then
         log_message "Failed to start Open-WebUI container." "${LEVEL_ERROR}"
         return 1
     fi
 
-    wait_for_container_status_up "${OPEN_WEBUI_CONTAINER_NAME}" || return 1
+    wait_for_container_status_up "${open_webui_container_name}" || return 1
     log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
 }
 
