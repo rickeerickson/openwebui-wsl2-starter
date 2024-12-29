@@ -21,12 +21,12 @@ The script reads configuration values from a `update_open-webui.config.sh` file.
 ### `update_open-webui.config.sh`
 ```bash
 # Ollama Configuration
-OLLAMA_HOST_PORT=11434
+OLLAMA_PORT=11434
 OLLAMA_HOST="localhost"
 OLLAMA_CONTAINER_TAG="latest"
 
 # Open WebUI Configuration
-OPEN_WEBUI_HOST_PORT=3000
+OPEN_WEBUI_PORT=3000
 OPEN_WEBUI_HOST="localhost"
 OPEN_WEBUI_CONTAINER_TAG="latest"
 
