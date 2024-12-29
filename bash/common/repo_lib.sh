@@ -546,23 +546,59 @@ stop_remove_run_open_webui_container() {
     log_message "Stopping and removing Open-WebUI container..." "${LEVEL_INFO}"
 
     stop_and_remove_container "${open_webui_container_name}" || return 1
-
-    log_message "Running Open-WebUI container..." "${LEVEL_INFO}"
-    if ! docker run -d \
-        --gpus all \
-        --network=host \
-        --volume "${open_webui_volume_name}:/app/backend/data" \
-        --env OLLAMA_BASE_URL=${ollama_url} \
-        --env PORT=${open_webui_port} \
-        --name "${open_webui_container_name}" \
-        --restart always \
-        "ghcr.io/open-webui/open-webui:${open_webui_container_tag}"; then
-        log_message "Failed to start Open-WebUI container." "${LEVEL_ERROR}"
-        return 1
-    fi
+    ensure_open_webui_running "${ollama_host}" "${open_webui_port}" "${open_webui_container_tag}" "${open_webui_container_name}" "${open_webui_volume_name}" || return 1
 
     wait_for_container_status_up "${open_webui_container_name}" || return 1
     log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
+}
+
+ensure_open_webui_running() {
+    local host="${1:-$OPEN_WEBUI_HOST}"
+    local port="${2:-$OPEN_WEBUI_PORT}"
+    local container_tag="${3:-$OPEN_WEBUI_CONTAINER_TAG}"
+    local container_name="${4:-$OPEN_WEBUI_CONTAINER_NAME}"
+    local volume_name="${5:-$OPEN_WEBUI_VOLUME_NAME}"
+
+    local retry_count=0
+    local max_retries=5
+    local fib1=1
+    local fib2=1
+
+    log_message "Checking if Open-WebUI container is running..." "${LEVEL_INFO}"
+
+    while (( retry_count < max_retries )); do
+        if docker ps --filter "name=${container_name}" --filter "status=running" --format "{{.Names}}" | grep -q "${container_name}"; then
+            log_message "Open-WebUI container is already running." "${LEVEL_INFO}"
+            return 0
+        else
+            log_message "Attempting to start Open-WebUI container (Attempt $((retry_count + 1))/${max_retries})..." "${LEVEL_WARNING}"
+            if docker run -d \
+                --gpus all \
+                --network=host \
+                --volume "${open_webui_volume_name}:/app/backend/data" \
+                --env OLLAMA_BASE_URL=${ollama_url} \
+                --env PORT=${open_webui_port} \
+                --name "${open_webui_container_name}" \
+                --restart always \
+                "ghcr.io/open-webui/open-webui:${open_webui_container_tag}"; then
+                wait_for_container_status_up "${container_name}" && {
+                    log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
+                    return 0
+                }
+            fi
+        fi
+
+        local delay=$fib1
+        log_message "Retrying in ${delay} seconds..." "${LEVEL_WARNING}"
+        sleep "${delay}"
+        local next_delay=$((fib1 + fib2))
+        fib1=$fib2
+        fib2=$next_delay
+        ((retry_count++))
+    done
+
+    log_message "Failed to start Open-WebUI container after ${max_retries} attempts." "${LEVEL_ERROR}"
+    return 1
 }
 
 verify_open_webui_setup() {
