@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 if (Get-Module -Name WslCommon) {
     Remove-Module -Name WslCommon -Force
