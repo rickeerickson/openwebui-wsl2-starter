@@ -52,9 +52,9 @@ DEFAULT_OLLAMA_MODELS=(
    cd openwebui-wsl2-starter
    ```
 
-2. **Run the setup script** in PowerShell:
-   ```powershell
-   .\Setup-OpenWebUI.ps1
+2. **Run the setup script**:
+   ```cmd
+   RUNME.cmd
    ```
 
    - The script will:
@@ -69,8 +69,8 @@ DEFAULT_OLLAMA_MODELS=(
 
 - Update the `update_open-webui.config.sh` file to change container configuration.
 - Restart the setup to apply changes:
-   ```powershell
-   .\Setup-OpenWebUI.ps1
+   ```cmd
+   RUNME.cmd
    ```
 
 ## Output
