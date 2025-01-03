@@ -534,40 +534,48 @@ ensure_ollama_running() {
 }
 
 stop_remove_run_open_webui_container() {
-    local ollama_host="${1:-OLLAMA_HOST}"
-    local ollama_port="${2:-OLLAMA_PORT}"
-    local open_webui_port="${3:-OPEN_WEBUI_PORT}"
-    local open_webui_container_tag="${4:-OPEN_WEBUI_CONTAINER_TAG}"
-    local open_webui_container_name="${5:-OPEN_WEBUI_CONTAINER_NAME}"
-    local open_webui_volume_name="${6:-OPEN_WEBUI_VOLUME_NAME}"
+    local ollama_host="${1:-$OLLAMA_HOST}"
+    local ollama_port="${2:-$OLLAMA_PORT}"
+    local open_webui_host="${3:-$OPEN_WEBUI_HOST}"
+    local open_webui_port="${4:-$OPEN_WEBUI_PORT}"
+    local open_webui_container_tag="${5:-$OPEN_WEBUI_CONTAINER_TAG}"
+    local open_webui_container_name="${6:-$OPEN_WEBUI_CONTAINER_NAME}"
+    local open_webui_volume_name="${7:-$OPEN_WEBUI_VOLUME_NAME}"
 
-    local ollama_url="http://${ollama_host}:${ollama_port}"
+    log_message "Open-WebUI: open_webui_host=${open_webui_host}, open_webui_port=${open_webui_port}, open_webui_container_tag=${open_webui_container_tag}, open_webui_container_name=${open_webui_container_name}, open_webui_volume_name=${open_webui_volume_name}" "${LEVEL_DEBUG_1}"
+    log_message "Ollama: ollama_host=${ollama_host}, ollama_port=${ollama_port}" "${LEVEL_DEBUG_1}"
 
     log_message "Stopping and removing Open-WebUI container..." "${LEVEL_INFO}"
 
     stop_and_remove_container "${open_webui_container_name}" || return 1
-    ensure_open_webui_running "${ollama_host}" "${open_webui_port}" "${open_webui_container_tag}" "${open_webui_container_name}" "${open_webui_volume_name}" || return 1
-
+    ensure_open_webui_running "${ollama_host}" "${ollama_port}" "${open_webui_host}" "${open_webui_port}" "${open_webui_container_tag}" "${open_webui_container_name}" "${open_webui_volume_name}" || return 1
     wait_for_container_status_up "${open_webui_container_name}" || return 1
+
     log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
 }
 
 ensure_open_webui_running() {
-    local host="${1:-$OPEN_WEBUI_HOST}"
-    local port="${2:-$OPEN_WEBUI_PORT}"
-    local container_tag="${3:-$OPEN_WEBUI_CONTAINER_TAG}"
-    local container_name="${4:-$OPEN_WEBUI_CONTAINER_NAME}"
-    local volume_name="${5:-$OPEN_WEBUI_VOLUME_NAME}"
+    local ollama_host="${1:-$OLLAMA_HOST}"
+    local ollama_port="${2:-$OLLAMA_PORT}"
+    local open_webui_host="${3:-$OPEN_WEBUI_HOST}"
+    local open_webui_port="${4:-$OPEN_WEBUI_PORT}"
+    local open_webui_container_tag="${5:-$OPEN_WEBUI_CONTAINER_TAG}"
+    local open_webui_container_name="${6:-$OPEN_WEBUI_CONTAINER_NAME}"
+    local open_webui_volume_name="${7:-$OPEN_WEBUI_VOLUME_NAME}"
 
+    local ollama_url="http://${ollama_host}:${ollama_port}"
     local retry_count=0
     local max_retries=5
     local fib1=1
     local fib2=1
 
+    log_message "Open-WebUI: open_webui_host=${open_webui_host}, open_webui_port=${open_webui_port}, open_webui_container_tag=${open_webui_container_tag}, open_webui_container_name=${open_webui_container_name}, open_webui_volume_name=${open_webui_volume_name}" "${LEVEL_DEBUG_1}"
+    log_message "Ollama: ollama_host=${ollama_host}, ollama_port=${ollama_port}, ollama_url=${ollama_url}" "${LEVEL_DEBUG_1}"
+
     log_message "Checking if Open-WebUI container is running..." "${LEVEL_INFO}"
 
     while (( retry_count < max_retries )); do
-        if docker ps --filter "name=${container_name}" --filter "status=running" --format "{{.Names}}" | grep -q "${container_name}"; then
+        if docker ps --filter "name=${open_webui_container_name}" --filter "status=running" --format "{{.Names}}" | grep -q "${open_webui_container_name}"; then
             log_message "Open-WebUI container is already running." "${LEVEL_INFO}"
             return 0
         else
@@ -581,7 +589,7 @@ ensure_open_webui_running() {
                 --name "${open_webui_container_name}" \
                 --restart always \
                 "ghcr.io/open-webui/open-webui:${open_webui_container_tag}"; then
-                wait_for_container_status_up "${container_name}" && {
+                wait_for_container_status_up "${open_webui_container_name}" && {
                     log_message "Open-WebUI container started successfully." "${LEVEL_INFO}"
                     return 0
                 }
@@ -602,27 +610,30 @@ ensure_open_webui_running() {
 }
 
 verify_open_webui_setup() {
-    local host="${1:-localhost}"
-    local port="${2:-3000}"
-    local url="http://${host}:${port}"
+    local open_webui_host="${1:-$OPEN_WEBUI_HOST}"
+    local open_webui_port="${2:-$OPEN_WEBUI_PORT}"
+    local open_webui_container_tag="${3:-$OPEN_WEBUI_CONTAINER_TAG}"
+    local open_webui_container_name="${4:-$OPEN_WEBUI_CONTAINER_NAME}"
+    local open_webui_volume_name="${5:-$OPEN_WEBUI_VOLUME_NAME}"
+    local open_webui_url="http://${open_webui_host}:${open_webui_port}"
 
-    log_message "Verifying Open-WebUI setup on ${url}..." "${LEVEL_INFO}"
+    log_message "Verifying Open-WebUI setup on ${open_webui_url}..." "${LEVEL_INFO}"
 
     retry_count=0
     max_retries=5
-    while ! ss -tuln | grep -q "${port}" && [[ $retry_count -lt $max_retries ]]; do
-        log_message "Waiting for Open-WebUI to start on port ${port}... Retry $((retry_count + 1))/${max_retries}" "${LEVEL_INFO}"
+    while ! ss -tuln | grep -q "${open_webui_port}" && [[ $retry_count -lt $max_retries ]]; do
+        log_message "Waiting for Open-WebUI to start on port ${open_webui_port}... Retry $((retry_count + 1))/${max_retries}" "${LEVEL_INFO}"
         sleep $((2 ** retry_count))
         ((retry_count++))
     done
 
-    if ! ss -tuln | grep -q "${port}"; then
-        log_message "Open-WebUI is not listening on port ${port} after ${max_retries} attempts." "${LEVEL_ERROR}"
+    if ! ss -tuln | grep -q "${open_webui_port}"; then
+        log_message "Open-WebUI is not listening on port ${open_webui_port} after ${max_retries} attempts." "${LEVEL_ERROR}"
         exit 1
     fi
 
-    run_command_with_retry "curl -s -o /dev/null --write-out \"%{response_code}\n\" ${url}"
-    run_command_with_retry "docker logs \"${OPEN_WEBUI_CONTAINER_NAME}\""
+    run_command_with_retry "curl -s -o /dev/null --write-out \"%{response_code}\n\" ${open_webui_url}"
+    run_command_with_retry "docker logs \"${open_webui_container_name}\""
 
     log_message "Open-WebUI setup verified successfully." "${LEVEL_INFO}"
 }

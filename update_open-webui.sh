@@ -44,7 +44,7 @@ pull_ollama_models
 
 pull_docker_image "ghcr.io/open-webui/open-webui" "${OPEN_WEBUI_CONTAINER_TAG}"
 ensure_port_available "${OPEN_WEBUI_PORT}"
-stop_remove_run_open_webui_container "${OLLAMA_HOST}" "${OLLAMA_PORT}" "${OPEN_WEBUI_PORT}" "${OPEN_WEBUI_CONTAINER_TAG}"
+stop_remove_run_open_webui_container "${OLLAMA_HOST}" "${OLLAMA_PORT}" "${OPEN_WEBUI_HOST}" "${OPEN_WEBUI_PORT}" "${OPEN_WEBUI_CONTAINER_TAG}"
 verify_open_webui_setup "${OPEN_WEBUI_HOST}" "${OPEN_WEBUI_PORT}"
 
 log_message "${script_name} completed successfully."
