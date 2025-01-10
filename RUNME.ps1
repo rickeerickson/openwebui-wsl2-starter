@@ -1,10 +1,36 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-if (Get-Module -Name WslCommon) {
-    Remove-Module -Name WslCommon -Force
+function Get-RepoRoot {
+    param(
+        [string]$StartDir = $PSScriptRoot
+    )
+
+    # Ensure we have an absolute path
+    $resolvedStartDir = (Resolve-Path $StartDir).Path
+
+    # Pass the directory explicitly to Git
+    $repoRoot = & git -C $resolvedStartDir rev-parse --show-toplevel 2>$null
+    if (-not $repoRoot) {
+        Write-Error "Not a Git repository or Git not installed."
+        return $null
+    }
+    return $repoRoot
 }
-Import-Module "$PSScriptRoot\wsl\WslCommon.psm1" -Force
+
+$repoRoot = Get-RepoRoot
+
+if (Get-Module -Name CommonLibrary) {
+    Remove-Module -Name CommonLibrary -Force
+}
+
+Import-Module "$repoRoot\powershell\CommonLibrary.psm1" -Force
+$configFilePath = "$repoRoot\update_open-webui.config.sh"
+
+Write-Host "=== Reading Bash config from: $($configFilePath) ==="
+$configVars = ParseBashConfig -FilePath $configFilePath
+
+$OPEN_WEBUI_PORT = if ($configVars["OPEN_WEBUI_PORT"]) { [int]$configVars["OPEN_WEBUI_PORT"] } else { 3000 }
 
 Write-Log "Setting up WSL and Ubuntu..." -ForegroundColor Cyan
 Request-AdminPrivileges
