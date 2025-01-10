@@ -685,3 +685,103 @@ pull_ollama_models() {
 
     log_message "Model pulling completed." "${LEVEL_INFO}"
 }
+
+showBasicSystemInfo() {
+  echo "=== Basic System Info ==="
+  echo "User: $(whoami)"
+  echo "Home: $HOME"
+  echo "Distro Info:"
+  lsb_release -a 2>/dev/null || cat /etc/os-release
+  echo
+}
+
+showNetworkInterfacesAndIPs() {
+  echo "=== Network Interfaces & IPs ==="
+  ip addr show
+  echo
+}
+
+showListeningPorts() {
+  echo "=== Listening Ports (TCP) ==="
+  sudo lsof -i -P -n | grep LISTEN
+  echo
+}
+
+testOllamaPort() {
+  echo "=== Test Ollama Port (${OLLAMA_PORT}) ==="
+  (echo > "/dev/tcp/${OLLAMA_HOST}/${OLLAMA_PORT}") >/dev/null 2>&1 \
+    && echo "TCP connection to port ${OLLAMA_PORT} succeeded!" \
+    || echo "TCP connection to port ${OLLAMA_PORT} failed."
+
+  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" http://${OLLAMA_HOST}:${OLLAMA_PORT} 2>/dev/null)"
+  if [[ "${http_code}" =~ ^[0-9]+$ ]]; then
+    echo "HTTP response code on port ${OLLAMA_PORT}: ${http_code}"
+  else
+    echo "No valid HTTP response on port ${OLLAMA_PORT}"
+  fi
+  echo
+}
+
+testOpenWebUIPort() {
+  echo "=== Test Open-WebUI Port (${OPEN_WEBUI_PORT}) ==="
+  (echo > "/dev/tcp/${OPEN_WEBUI_HOST}/${OPEN_WEBUI_PORT}") >/dev/null 2>&1 \
+    && echo "TCP connection to port ${OPEN_WEBUI_PORT} succeeded!" \
+    || echo "TCP connection to port ${OPEN_WEBUI_PORT} failed."
+
+  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" http://${OPEN_WEBUI_HOST}:${OPEN_WEBUI_PORT} 2>/dev/null)"
+  if [[ "${http_code}" =~ ^[0-9]+$ ]]; then
+    echo "HTTP response code on port ${OPEN_WEBUI_PORT}: ${http_code}"
+  else
+    echo "No valid HTTP response on port ${OPEN_WEBUI_PORT}"
+  fi
+  echo
+}
+
+dockerDiagnostics() {
+  echo "=== Docker Diagnostics ==="
+  echo "[*] Docker version:"
+  docker --version || echo "Docker not installed or not in PATH."
+  echo
+  echo "[*] Docker ps (running containers):"
+  docker ps || echo "Could not list Docker containers."
+  echo
+  echo "[*] Docker images:"
+  docker images || echo "Could not list Docker images."
+  echo
+}
+
+checkOllamaLogs() {
+  echo "=== Ollama Container Logs ==="
+  container="ollama"
+  if docker ps --filter "name=$container" --format '{{.Names}}' | grep -qw "$container"; then
+    echo "Container '$container' is running. Checking logs for 'error', 'warn', 'listen'..."
+    docker logs "$container" 2>&1 | grep -Ei "error|warn|listen" \
+      || echo "No matches for error|warn|listen in logs."
+  else
+    echo "Container '$container' is not running."
+  fi
+  echo
+}
+
+checkOpenWebUILogs() {
+  echo "=== Open-WebUI Container Logs ==="
+  container="open-webui"
+  if docker ps --filter "name=$container" --format '{{.Names}}' | grep -qw "$container"; then
+    echo "Container '$container' is running. Checking logs for 'error', 'warn', 'listen'..."
+    docker logs "$container" 2>&1 | grep -Ei "error|warn|listen" \
+      || echo "No matches for error|warn|listen in logs."
+  else
+    echo "Container '$container' is not running."
+  fi
+  echo
+}
+
+checkRoutingConnectivity() {
+  echo "=== Routing & Connectivity ==="
+  echo "[*] Default routes:"
+  ip route show default
+  echo
+  echo "[*] Checking external connectivity to google.com..."
+  ping -c 4 google.com || echo "Ping to google.com failed."
+  echo
+}
