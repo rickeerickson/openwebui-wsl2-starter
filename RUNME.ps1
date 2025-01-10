@@ -49,5 +49,8 @@ Set-ExecutableAttribute -Path $wslScriptPath
 
 Start-WslScript -Path $wslScriptPath
 
+$ipAddress = Get-IPAddress
+Enable-OpenWebUIPortProxyIfNeeded -ListenAddress $ipAddress -ListenPort $OPEN_WEBUI_PORT -ConnectAddress "127.0.0.1" -ConnectPort $OPEN_WEBUI_PORT
+
 Write-Host "Launching WSL interactively with Docker status..." -ForegroundColor Cyan
 wsl -e bash -c "docker ps; exec bash"

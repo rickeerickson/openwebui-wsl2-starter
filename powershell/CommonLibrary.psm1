@@ -202,9 +202,7 @@ function ParseBashConfig {
     return $result
 }
 
-function Get-LanIPAddress {
-    # Looks up the default IPv4 route (0.0.0.0/0), picks the best route by metrics,
-    # then returns the IPv4 address of that interface (excluding loopback and APIPA).
+function Get-IPAddress {
     $defaultRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" -ErrorAction SilentlyContinue |
         Sort-Object -Property RouteMetric,InterfaceMetric |
         Select-Object -First 1

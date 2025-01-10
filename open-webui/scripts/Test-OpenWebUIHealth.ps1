@@ -37,8 +37,8 @@ Write-Host "Parsed or default OPEN_WEBUI_HOST = $OPEN_WEBUI_HOST"
 Write-Host "Parsed or default OPEN_WEBUI_PORT = $OPEN_WEBUI_PORT"
 
 Write-Host "Detecting LAN IP..."
-$LAN_IP = Get-LanIPAddress
-Write-Host "LAN IP is: $LAN_IP"
+$ipAddress = Get-IPAddress
+Write-Host "IP address is: $ipAddress"
 Write-Host
 
 ShowWindowsInfo
@@ -50,10 +50,10 @@ TestOpenWebUIPort -TargetHost $OPEN_WEBUI_HOST -TargetPort $OPEN_WEBUI_PORT
 CheckOpenWebUIHTTP -Url ("http://{0}:{1}" -f $OPEN_WEBUI_HOST, $OPEN_WEBUI_PORT)
 CurlOpenWebUI -Url ("http://{0}:{1}" -f $OPEN_WEBUI_HOST, $OPEN_WEBUI_PORT)
 
-Write-Host "=== Checking connectivity via LAN IP ($($LAN_IP):$($OPEN_WEBUI_PORT)) ==="
-TestOpenWebUIPort -TargetHost $LAN_IP -TargetPort $OPEN_WEBUI_PORT
-CheckOpenWebUIHTTP -Url ("http://{0}:{1}" -f $LAN_IP, $OPEN_WEBUI_PORT)
-CurlOpenWebUI -Url ("http://{0}:{1}" -f $LAN_IP, $OPEN_WEBUI_PORT)
+Write-Host "=== Checking connectivity via IP ($($ipAddress):$($OPEN_WEBUI_PORT)) ==="
+TestOpenWebUIPort -TargetHost $ipAddress -TargetPort $OPEN_WEBUI_PORT
+CheckOpenWebUIHTTP -Url ("http://{0}:{1}" -f $ipAddress, $OPEN_WEBUI_PORT)
+CurlOpenWebUI -Url ("http://{0}:{1}" -f $ipAddress, $OPEN_WEBUI_PORT)
 
 Show-PortProxyRules
 
