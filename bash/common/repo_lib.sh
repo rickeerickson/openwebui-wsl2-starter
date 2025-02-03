@@ -2,6 +2,9 @@
 set -euo pipefail
 trap 'echo "Error occurred in script: ${BASH_SOURCE[0]}, line: ${LINENO}, command: ${BASH_COMMAND}" >&2' ERR
 
+# Optional: Export to ensure all apt-get commands run non-interactively
+export DEBIAN_FRONTEND=noninteractive
+
 source_required_file() {
     local filepath="$1"
 
@@ -166,13 +169,13 @@ update_system_packages() {
     run_command_with_retry "sudo apt-get upgrade -y"
     run_command_with_retry "sudo apt-get dist-upgrade -y"
     run_command_with_retry "sudo apt-get autoremove -y"
-    run_command_with_retry "sudo apt-get autoclean"
+    run_command_with_retry "sudo apt-get autoclean -y"
     log_message "System packages updated successfully." "${LEVEL_INFO}"
 }
 
 setup_docker_keyring() {
     log_message "Setting up Docker GPG keyring and repository..." "${LEVEL_INFO}"
-    run_command_with_retry "sudo apt-get install ca-certificates curl"
+    run_command_with_retry "sudo apt-get install -y ca-certificates curl"
     run_command_with_retry "sudo install -m 0755 -d /etc/apt/keyrings"
     run_command_with_retry "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc"
     run_command_with_retry "sudo chmod a+r /etc/apt/keyrings/docker.asc"
@@ -189,7 +192,7 @@ install_and_configure_docker() {
     log_message "Installing and configuring Docker..." "${LEVEL_INFO}"
 
     run_command_with_retry "sudo apt-get update"
-    run_command_with_retry "sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin"
+    run_command_with_retry "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin"
     run_command_with_retry "sudo nvidia-ctk runtime configure --runtime=docker"
 
     if ! getent group docker > /dev/null 2>&1; then
@@ -362,8 +365,7 @@ wait_for_container_stop() {
     done
 }
 
-list_running_containers()
-{
+list_running_containers() {
     log_message "Listing running containers..." "${LEVEL_INFO}"
     run_command_with_retry "docker ps"
 }
@@ -655,7 +657,7 @@ install_nvidia_container_toolkit() {
 
     # Update the package lists and install the toolkit
     run_command_with_retry "sudo apt-get update"
-    run_command_with_retry "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-container-toolkit"
+    run_command_with_retry "sudo apt-get install -y nvidia-container-toolkit"
     verify_nvidia_environment
 }
 
