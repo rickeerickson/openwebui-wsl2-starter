@@ -109,14 +109,30 @@ function Enable-WindowsFeatureIfNeeded {
     Write-Log "Feature '$FeatureName' is already enabled." $LEVEL_INFO
 }
 
-function Install-WslIfNeeded {
+function Enable-WindowsFeatureIfNeeded {
     Enable-WindowsFeatureIfNeeded -FeatureName "Microsoft-Windows-Subsystem-Linux"
     Enable-WindowsFeatureIfNeeded -FeatureName "VirtualMachinePlatform"
 }
 
+function Install-WslIfNeeded {
+    & wsl.exe --status 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "WSL is installed."
+    } else {
+        Write-Host "Installing WSL..."
+        Start-CommandWithRetry "wsl --install --no-launch"
+    }
+}
+
+function Update-Wsl {
+    Write-Log "Updating WSL..." $LEVEL_INFO
+    Start-CommandWithRetry "wsl --update"
+}
+
+
 function Set-WslVersionIfNeeded {
     Write-Log "Ensuring WSL 2 is the default version..." $LEVEL_INFO
-    if (-not (wsl --list --verbose 2>&1 | Select-String "WSL 2")) {
+    if (-not (wsl --list --verbose 2>&1 | Select-String "Version: 2")) {
         Start-CommandWithRetry "wsl --set-default-version 2"
     }
 }
