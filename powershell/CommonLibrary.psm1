@@ -120,7 +120,7 @@ function Install-WslIfNeeded {
         Write-Host "WSL is installed."
     } else {
         Write-Host "Installing WSL..."
-        Start-CommandWithRetry "wsl --install --no-launch"
+        Start-CommandWithRetry "wsl --install -d Ubuntu --no-launch"
     }
 }
 
@@ -137,17 +137,44 @@ function Set-WslVersionIfNeeded {
     }
 }
 
-function Install-WslDistroIfNeeded {
-    param ([string]$DistroName = "Ubuntu")
-
-    $wslDistros = wsl --list --quiet
-
-    if (-not ($wslDistros -contains $DistroName)) {
-        Write-Log "Installing WSL distro: $DistroName..." $LEVEL_INFO
-        Start-CommandWithRetry { wsl --install $DistroName --no-launch}
+function Install-WslDistributionInteractive {
+    param (
+        [string]$DistroName = "Ubuntu"
+    )
+    
+    # Check if the distro is already installed
+    wsl --list | Select-String $DistroName
+    if ($LASTEXITCODE -eq 0) {
+        Write-Log "WSL distro '$DistroName' is already installed." $LEVEL_INFO
+        Write-Log "Setting '$DistroName' as the default WSL distribution." $LEVEL_INFO
+        wsl --setdefault $DistroName
+        return
     }
     else {
-        Write-Log "WSL distro '$DistroName' is already installed." $LEVEL_INFO
+        Write-Log "Installing WSL distro '$DistroName'..." $LEVEL_INFO
+        
+        $inverseBackground = $Host.UI.RawUI.ForegroundColor
+        $inverseForeground = $Host.UI.RawUI.BackgroundColor
+
+        $border = '===================================================================================================='
+        $borderLength = $border.Length
+        Write-Host $border -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host 'IMPORTANT: Ubuntu has been installed and set as the default WSL distribution.'.PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host 'Please launch Ubuntu to configure your default username and password.'.PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host 'Once you have completed the configuration, from the terminal run: `exit`'.PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host '$ exit'.PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host 'After exiting Ubuntu, please re-run the RUNME script.'.PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host $border -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        
+        wsl --install -d $DistroName
+
+        Write-Log "Setting '$DistroName' as the default WSL distribution." $LEVEL_INFO
+        wsl --setdefault $DistroName
+        
+        Write-Host $border -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host "Please re-run the RUNME script to continue.".PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Write-Host $border -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
+        Exit
     }
 }
 

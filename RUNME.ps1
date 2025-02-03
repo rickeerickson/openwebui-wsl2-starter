@@ -36,7 +36,7 @@ Write-Log "Setting up WSL and Ubuntu..." -ForegroundColor Cyan
 Request-AdminPrivileges
 Install-WslIfNeeded
 Set-WslVersionIfNeeded
-Install-WslDistroIfNeeded -DistroName "Ubuntu"
+Install-WslDistributionInteractive -DistroName "Ubuntu"
 
 Write-Log "Starting OpenWebUI setup..." -ForegroundColor Cyan
 Stop-Wsl
