@@ -30,8 +30,8 @@ log_file="${script_dir}/${script_name}.log"
 
 update_system_packages
 setup_docker_keyring
-install_and_configure_docker
 install_nvidia_container_toolkit
+install_and_configure_docker
 
 check_and_prompt_docker
 verify_docker_environment
