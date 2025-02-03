@@ -144,7 +144,7 @@ function Install-WslDistroIfNeeded {
 
     if (-not ($wslDistros -contains $DistroName)) {
         Write-Log "Installing WSL distro: $DistroName..." $LEVEL_INFO
-        Start-CommandWithRetry { wsl --install -d $DistroName }
+        Start-CommandWithRetry { wsl --install $DistroName --no-launch}
     }
     else {
         Write-Log "WSL distro '$DistroName' is already installed." $LEVEL_INFO
