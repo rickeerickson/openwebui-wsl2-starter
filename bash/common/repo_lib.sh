@@ -208,6 +208,26 @@ install_and_configure_docker() {
     log_message "Docker installation and configuration completed successfully." "${LEVEL_INFO}"
 }
 
+install_ollama() {
+    if command -v ollama >/dev/null 2>&1; then
+        log_message "Ollama is already installed." "${LEVEL_INFO}"
+        return 0
+    fi
+    log_message "Installing Ollama using the official install command..." "${LEVEL_INFO}"
+    if run_command_with_retry "curl -fsSL https://ollama.com/install.sh | sh"; then
+        if command -v ollama >/dev/null 2>&1; then
+            log_message "Ollama installed successfully." "${LEVEL_INFO}"
+            return 0
+        else
+            log_message "Ollama installation completed but 'ollama' command not found." "${LEVEL_ERROR}"
+            return 1
+        fi
+    else
+        log_message "Ollama installation failed." "${LEVEL_ERROR}"
+        return 1
+    fi
+}
+
 check_and_prompt_docker() {
     log_message "Checking Docker status..." "${LEVEL_INFO}"
 
