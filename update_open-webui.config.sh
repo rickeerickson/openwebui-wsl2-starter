@@ -14,7 +14,5 @@ OPEN_WEBUI_VOLUME_NAME="open-webui"
 
 # Default Ollama Models
 DEFAULT_OLLAMA_MODELS=(
-    "llama2:7b"
-    "gemma2:9b"
-    "codegemma:7b"
+    "llama3.2:1b"
 )
