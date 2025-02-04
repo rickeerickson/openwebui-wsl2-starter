@@ -45,7 +45,7 @@ OLLAMA_MODELS=(
     "llama2:7b"
     "llama3.2:3b"
     "mistral:7b"
-    "phi-4:14b"
+    "phi4:14b"
 )
     
 pull_ollama_models "${OLLAMA_MODELS[*]}"
