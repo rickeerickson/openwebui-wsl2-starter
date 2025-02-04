@@ -696,25 +696,26 @@ install_nvidia_container_toolkit() {
 }
 
 pull_ollama_models() {
+    local models_str="${1:-${DEFAULT_OLLAMA_MODELS[*]}}"
+    local models_list=()
+
+    read -r -a models_list <<< "$models_str"
+
     log_message "Pulling Ollama models..." "${LEVEL_INFO}"
-
-    source "$(dirname "${BASH_SOURCE[0]}")/default_ollama_models.sh"
-
-    local models=("${DEFAULT_OLLAMA_MODELS[@]}")  # Copy default models
 
     log_message "Fetching installed models..." "${LEVEL_INFO}"
     local installed_models
-    installed_models=$(ollama list | awk '{if(NR>1) print $1}')
+    installed_models=$(ollama list | awk 'NR > 1 { print $1 }')
 
-    log_message "Adding installed models to predefined list..." "${LEVEL_INFO}"
+    log_message "Adding installed models to the list..." "${LEVEL_INFO}"
     for model in $installed_models; do
-        if [[ ! " ${models[@]} " =~ " ${model} " ]]; then
-            models+=("$model")
+        if [[ ! " ${models_list[@]} " =~ " ${model} " ]]; then
+            models_list+=("$model")
         fi
     done
 
     log_message "Pulling models for Ollama..." "${LEVEL_INFO}"
-    for model in "${models[@]}"; do
+    for model in "${models_list[@]}"; do
         log_message "Pulling model: $model" "${LEVEL_INFO}"
         run_command_with_retry "ollama pull $model"
     done
