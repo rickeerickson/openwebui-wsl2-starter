@@ -228,15 +228,6 @@ install_ollama() {
     fi
 }
 
-check_and_prompt_docker() {
-    log_message "Checking Docker status..." "${LEVEL_INFO}"
-
-    if ! systemctl is-active --quiet docker; then
-        log_message "Docker is not running. Please start Docker." "${LEVEL_ERROR}"
-        exit 1
-    fi
-}
-
 ensure_port_available() {
     local port="$1"
     local pid
@@ -269,11 +260,34 @@ verify_ollama_setup() {
 }
 
 verify_docker_environment() {
+    log_message "Checking if the current shell's effective groups include 'docker'." "${LEVEL_INFO}"
+    if ! id -nG | grep -qw "docker"; then
+        local border="===================================================================================================="
+        local borderLength=${#border}
+        local reverse=$(tput rev)
+        local reset=$(tput sgr0)
+        
+        echo -e "${reverse}${border}${reset}"
+        echo -e "${reverse}$(printf "%-${borderLength}s" "ERROR: The current shell does not reflect your membership in the 'docker' group.")${reset}"
+        echo -e "${reverse}$(printf "%-${borderLength}s" "Even though your user may have been added to 'docker', you need to refresh your session.")${reset}"
+        echo -e "${reverse}$(printf "%-${borderLength}s" "Please 'exit' this shell and then re-run the RUNME script.")${reset}"
+        echo -e "${reverse}${border}${reset}"
+        exit 1
+    fi
+    
+    log_message "Checking Docker service..." "${LEVEL_INFO}"
+
+    if ! systemctl is-active --quiet docker; then
+        log_message "Docker is not running. Please start Docker." "${LEVEL_ERROR}"
+        exit 1
+    fi
+
     log_message "Verifying Docker environment..." "${LEVEL_INFO}"
     run_command_with_retry "docker --version"
     run_command_with_retry "docker context ls"
     run_command_with_retry "sudo lsof -i -P -n | grep LISTEN"
 }
+
 
 verify_nvidia_environment() {
     log_message "Verifying NVIDIA environment..." "${LEVEL_INFO}"

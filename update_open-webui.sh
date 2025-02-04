@@ -32,10 +32,9 @@ update_system_packages
 setup_docker_keyring
 install_nvidia_container_toolkit
 install_and_configure_docker
-
-check_and_prompt_docker
-verify_docker_environment
 install_ollama
+
+verify_docker_environment
 
 pull_docker_image "ollama/ollama" "${OLLAMA_CONTAINER_TAG}"
 ensure_port_available "${OLLAMA_PORT}"

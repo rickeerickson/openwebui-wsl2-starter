@@ -217,6 +217,10 @@ function Start-WslScript {
     )
     Write-Log "Running script: ${Path}..." -ForegroundColor Cyan
     wsl bash -c "$Path"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "Error: The WSL script exited with code $LASTEXITCODE. Please re-run the 'RUNME' script.  If the issue continues, please report an issue in GitHub."
+        exit $LASTEXITCODE
+    }
 }
 
 function ParseBashConfig {
