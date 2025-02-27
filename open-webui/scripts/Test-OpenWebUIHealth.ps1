@@ -30,6 +30,10 @@ $configFilePath = "$repoRoot\update_open-webui.config.sh"
 Write-Host "=== Reading Bash config from: $($configFilePath) ==="
 $configVars = ParseBashConfig -FilePath $configFilePath
 
+$wslScriptPath = Convert-ToPath -WindowsPath "$PSScriptRoot\diagnose_open-webui.sh"
+Set-ExecutableAttribute -Path $wslScriptPath
+Start-WslScript -Path $wslScriptPath
+
 $OPEN_WEBUI_HOST = if ($configVars["OPEN_WEBUI_HOST"]) { $configVars["OPEN_WEBUI_HOST"] } else { "localhost" }
 $OPEN_WEBUI_PORT = if ($configVars["OPEN_WEBUI_PORT"]) { [int]$configVars["OPEN_WEBUI_PORT"] } else { 3000 }
 
@@ -56,5 +60,9 @@ CheckOpenWebUIHTTP -Url ("http://{0}:{1}" -f $ipAddress, $OPEN_WEBUI_PORT)
 CurlOpenWebUI -Url ("http://{0}:{1}" -f $ipAddress, $OPEN_WEBUI_PORT)
 
 Show-PortProxyRules
+
+$openWebUIPort = [int]$configVars["OPEN_WEBUI_PORT"]
+Write-Host "=== Highlighting port proxy conflicts for OPEN_WEBUI_PORT=${openWebUIPort} ==="
+Show-PortProxyErrors -ConfigVars $configVars -Port $openWebUIPort
 
 Write-Host "=== END WINDOWS DIAGNOSTICS ==="

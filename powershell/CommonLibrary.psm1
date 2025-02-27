@@ -343,47 +343,6 @@ function CurlOpenWebUI {
   Write-Host
 }
 
-function Enable-OpenWebUIPortProxy {
-    param(
-        [string]$ListenAddress,
-        [int]$ListenPort = 3000,
-        [string]$ConnectAddress = "127.0.0.1",
-        [int]$ConnectPort = 3000
-    )
-
-    Write-Host "=== Enabling port proxy from $($ListenAddress):$($ListenPort) to $($ConnectAddress):$($ConnectPort) ==="
-    # Remove any existing proxy rule on that address:port
-    netsh interface portproxy delete v4tov4 `
-        listenaddress=$ListenAddress `
-        listenport=$ListenPort `
-        2>$null | Out-Null
-
-    # Create the new rule
-    netsh interface portproxy add v4tov4 `
-        listenaddress=$ListenAddress `
-        listenport=$ListenPort `
-        connectaddress=$ConnectAddress `
-        connectport=$ConnectPort `
-        2>$null
-
-    $ruleName = "OpenWebUI-$($ListenAddress)-$($ListenPort)"
-    if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)) {
-        Write-Host "Creating firewall rule for $($ListenAddress):$($ListenPort)"
-        New-NetFirewallRule `
-            -DisplayName $ruleName `
-            -Direction Inbound `
-            -Protocol TCP `
-            -LocalPort $ListenPort `
-            -Action Allow `
-            | Out-Null
-    } else {
-        Write-Host "Firewall rule already exists: $ruleName"
-    }
-
-    Write-Host "Port proxy setup complete."
-    Write-Host
-}
-
 function Show-PortProxyRules {
     Write-Host "=== Existing netsh portproxy rules ==="
     # This is read-only: it just lists them
@@ -398,7 +357,7 @@ function Show-PortProxyRules {
 
 function Enable-OpenWebUIPortProxyIfNeeded {
     param(
-        [string]$ListenAddress,
+        [string]$ListenAddress = 0.0.0.0,
         [int]$ListenPort = 3000,
         [string]$ConnectAddress = "127.0.0.1",
         [int]$ConnectPort = 3000
@@ -408,7 +367,7 @@ function Enable-OpenWebUIPortProxyIfNeeded {
 
     # Grab existing portproxy rules
     # Example line format: "Listen on ipv4:             Connect to ipv4:"
-    # "192.168.0.10:3000        127.0.0.1:3000"
+    # "0.0.0.0:3000        127.0.0.1:3000"
     $rules = netsh interface portproxy show v4tov4 2>$null
 
     if (-not $rules) {
@@ -424,7 +383,7 @@ function Enable-OpenWebUIPortProxyIfNeeded {
     $foundDifferent = $false
 
     foreach ($line in $rules) {
-        # e.g. line: "192.168.0.10:3000   127.0.0.1:3000"
+        # e.g. line: "0.0.0.0:3000   127.0.0.1:3000"
         if ($line -match '^(?<listen>[^:]+):(?<lport>\d+)\s+(?<connect>[^:]+):(?<cport>\d+)$') {
             $existingListenAddr = $Matches['listen']
             $existingListenPort = $Matches['lport']
@@ -482,4 +441,114 @@ function Enable-OpenWebUIPortProxyIfNeeded {
     }
 
     Write-Host "=== Done. ==="
+}
+
+Set-StrictMode -Version Latest
+
+function ParseBashConfig {
+    param(
+        [string]$FilePath
+    )
+    $result = @{}
+    if (-not (Test-Path $FilePath)) {
+        Write-Error "Config file not found: $FilePath"
+        return $result
+    }
+    $lines = Get-Content $FilePath
+    foreach ($line in $lines) {
+        if ($line -match '^\s*#' -or $line -match '^\s*$') {
+            continue
+        }
+        if ($line -match '^\s*([A-Z0-9_]+)=(.*)$') {
+            $varName = $Matches[1]
+            $varValue = $Matches[2].Trim()
+            $varValue = $varValue -replace '^["''](.*)["'']$', '$1'
+            $result[$varName] = $varValue
+        }
+    }
+    return $result
+}
+
+function Show-PortProxyErrors {
+    <#
+    .SYNOPSIS
+         Checks for conflicting port proxy rules.
+    .DESCRIPTION
+         Retrieves the current netsh portproxy rules and, optionally for a given Port (if provided),
+         filters the rules to only that port. It then compares the listen address(es) to the current valid IP
+         (via Get-IPAddress) and flags any rule whose listen address does not match the valid IP. For each invalid rule,
+         it prints a remediation command.
+    .EXAMPLE
+         Show-PortProxyErrors -ConfigVars $configVars -Port ([int]$configVars["OLLAMA_PORT"])
+    #>
+    param(
+         [hashtable]$ConfigVars,
+         [int]$Port = $null
+    )
+    Write-Host "=== Checking port proxy rules for conflicts ==="
+
+    $output = netsh interface portproxy show v4tov4 2>&1
+
+    # Split output into lines and process only those that begin with a digit.
+    $lines = $output -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d' }
+    $rules = @()
+
+    $pattern = '^(?<listen>\d{1,3}(?:\.\d{1,3}){3})\s+(?<lport>\d+)\s+(?<connect>\d{1,3}(?:\.\d{1,3}){3})\s+(?<cport>\d+)$'
+    foreach ($line in $lines) {
+         if ($line -match $pattern) {
+              $rule = [pscustomobject]@{
+                   ListenAddress  = $Matches['listen']
+                   ListenPort     = [int]$Matches['lport']
+                   ConnectAddress = $Matches['connect']
+                   ConnectPort    = [int]$Matches['cport']
+                   Line           = $line
+              }
+              $rules += $rule
+         }
+    }
+    if ($rules.Count -eq 0) {
+         Write-Host "No port proxy rules found."
+         return
+    }
+    
+    if ($Port) {
+         # Force the result into an array.
+         $targetRules = @($rules | Where-Object { $_.ListenPort -eq $Port })
+         if ($targetRules.Count -eq 0) {
+              Write-Host "No port proxy rules found for port $Port."
+              return
+         }
+         Test-PortGroupConflicts -Rules $targetRules -TargetPort $Port
+    }
+    else {
+         # If no port is specified, group by ListenPort and check each.
+         $groups = $rules | Group-Object -Property ListenPort
+         foreach ($group in $groups) {
+            Test-PortGroupConflicts -Rules $group.Group -TargetPort $group.Name
+         }
+    }
+}
+
+function Test-PortGroupConflicts {
+    param(
+        [array]$Rules,
+        [Parameter(Mandatory=$true)]
+        [int]$TargetPort
+    )
+    $validIP = Get-IPAddress
+    $distinctListen = @($Rules | Select-Object -ExpandProperty ListenAddress -Unique)
+    if ($distinctListen.Count -le 1) {
+         Write-Host "No conflicting port proxy rules detected for port $TargetPort."
+    } else {
+         Write-Host "Conflict detected for port $TargetPort. Expected valid ListenAddress is $validIP." -ForegroundColor Red
+         foreach ($rule in $Rules) {
+              if ($rule.ListenAddress -ne $validIP) {
+                   Write-Host "  Invalid rule: $($rule.Line)" -ForegroundColor Red
+                   Write-Host "    To remove this rule, run:" -ForegroundColor Yellow
+                   Write-Host "      netsh interface portproxy delete v4tov4 listenaddress=$($rule.ListenAddress) listenport=$TargetPort" -ForegroundColor Yellow
+              } else {
+                   Write-Host "  Valid rule: $($rule.Line)" -ForegroundColor Green
+              }
+         }
+    }
 }
