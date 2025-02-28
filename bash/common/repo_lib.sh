@@ -270,7 +270,7 @@ verify_docker_environment() {
         echo -e "${reverse}${border}${reset}"
         echo -e "${reverse}$(printf "%-${borderLength}s" "ERROR: The current shell does not reflect your membership in the 'docker' group.")${reset}"
         echo -e "${reverse}$(printf "%-${borderLength}s" "Even though your user may have been added to 'docker', you need to refresh your session.")${reset}"
-        echo -e "${reverse}$(printf "%-${borderLength}s" "Please 'exit' this shell and then re-run the RUNME script.")${reset}"
+        echo -e "${reverse}$(printf "%-${borderLength}s" "Please re-run the RUNME script.")${reset}"
         echo -e "${reverse}${border}${reset}"
         exit 1
     fi
