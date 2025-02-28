@@ -170,6 +170,7 @@ function Install-WslDistributionInteractive {
 
         Write-Log "Setting '$DistroName' as the default WSL distribution." $LEVEL_INFO
         wsl --setdefault $DistroName
+        wsl
         
         Write-Host $border -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
         Write-Host "Please re-run the RUNME script to continue.".PadRight($borderLength) -ForegroundColor $inverseForeground -BackgroundColor $inverseBackground
