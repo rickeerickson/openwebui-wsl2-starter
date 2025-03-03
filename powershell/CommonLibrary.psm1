@@ -553,3 +553,58 @@ function Test-PortGroupConflicts {
          }
     }
 }
+
+function Remove-NetshBindings {
+    <#
+    .SYNOPSIS
+         Interactively removes netsh portproxy bindings.
+    .DESCRIPTION
+         This function lists all netsh interface portproxy bindings (v4tov4) and prompts the user
+         for each binding whether to remove it. If the user confirms (Y/y), it runs the appropriate
+         netsh delete command.
+    .EXAMPLE
+         Clean-NetshBindings
+    #>
+
+    Write-Host "Listing all netsh portproxy bindings..."
+    $output = netsh interface portproxy show v4tov4 2>&1
+    Write-Host $output
+
+    # Split output into lines and process only those lines that start with a digit.
+    $lines = $output -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d' }
+    $bindings = @()
+
+    # Regex pattern to capture ListenAddress, ListenPort, ConnectAddress, and ConnectPort.
+    $pattern = '^(?<listen>\d{1,3}(?:\.\d{1,3}){3})\s+(?<lport>\d+)\s+(?<connect>\d{1,3}(?:\.\d{1,3}){3})\s+(?<cport>\d+)$'
+    foreach ($line in $lines) {
+        if ($line -match $pattern) {
+            $binding = [pscustomobject]@{
+                ListenAddress  = $Matches['listen']
+                ListenPort     = [int]$Matches['lport']
+                ConnectAddress = $Matches['connect']
+                ConnectPort    = [int]$Matches['cport']
+                Line           = $line
+            }
+            $bindings += $binding
+        }
+    }
+
+    if ($bindings.Count -eq 0) {
+        Write-Host "No portproxy bindings found."
+        return
+    }
+
+    foreach ($binding in $bindings) {
+        Write-Host ""
+        Write-Host "Found binding: $($binding.Line)"
+        $choice = Read-Host "Do you want to remove this binding? (Y/N)"
+        if ($choice -match '^(y|Y)') {
+            $cmd = "netsh interface portproxy delete v4tov4 listenaddress=$($binding.ListenAddress) listenport=$($binding.ListenPort)"
+            Write-Host "Running: $cmd"
+            Invoke-Expression $cmd
+            Write-Host "Binding removed." -ForegroundColor Green
+        } else {
+            Write-Host "Skipping removal of binding."
+        }
+    }
+}
