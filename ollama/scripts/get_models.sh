@@ -48,6 +48,7 @@ OLLAMA_MODELS=(
     "mistral:7b"
     "phi4-mini:3.8b"
     "phi4:14b"
+    "qwq:32b"
 )
     
 pull_ollama_models "${OLLAMA_MODELS[*]}"
