@@ -28,7 +28,7 @@ Import-Module "$repoRoot\powershell\CommonLibrary.psm1" -Force
 
 Write-Log "Installing WSL and Ubuntu..." -ForegroundColor Cyan
 Request-AdminPrivileges
-Enable-WindowsFeatureIfNeeded
+Enable-RequiredWindowsFeatures
 Install-WslIfNeeded
 Update-Wsl
 Set-WslVersionIfNeeded

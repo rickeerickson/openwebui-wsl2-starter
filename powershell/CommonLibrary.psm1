@@ -109,7 +109,8 @@ function Enable-WindowsFeatureIfNeeded {
     Write-Log "Feature '$FeatureName' is already enabled." $LEVEL_INFO
 }
 
-function Enable-WindowsFeatureIfNeeded {
+function Enable-RequiredWindowsFeatures {
+    Write-Log "Enabling required Windows features..." $LEVEL_INFO
     Enable-WindowsFeatureIfNeeded -FeatureName "Microsoft-Windows-Subsystem-Linux"
     Enable-WindowsFeatureIfNeeded -FeatureName "VirtualMachinePlatform"
 }
