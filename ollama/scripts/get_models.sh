@@ -49,6 +49,7 @@ OLLAMA_MODELS=(
     "mistral:7b"
     "phi4-mini:3.8b"
     "phi4:14b"
+    "qwen3:32b"
     "qwq:32b"
 )
     
