@@ -30,28 +30,60 @@ log_file="${script_dir}/${script_name}.log"
 
 
 # Ollama Models
+# -------------------------------
+# Full (FP16) models
 OLLAMA_MODELS=(
+    # Coding
     "codegemma:7b"
+    "codellama:7b"
     "codellama:13b"
     "codellama:34b"
     "codellama:70b"
-    "codellama:7b"
-    "deepseek-coder-v2:16b"
-    "deepseek-r1:14b"
-    "deepseek-r1:32b"
-    "deepseek-r1:8b"
-    "gemma2:27b"
-    "gemma2:9b"
+
+    # General-purpose LLMs
     "llama2:7b"
+    "mistral:7b"
+    "gemma2:9b"
+    "gemma2:27b"
     "llama3.2:3b"
     "llama3.3:70b"
     "llama4:latest"
     "mistral-small3.1:24b"
-    "mistral:7b"
+
+    # Reasoning & Misc
+    "deepseek-r1:8b"
+    "deepseek-r1:14b"
+    "deepseek-r1:32b"
+
+    # Tiny & Edge
     "phi4-mini:3.8b"
     "phi4:14b"
     "qwen3:32b"
     "qwq:32b"
+
+    # Coding-focused specialist
+    "deepseek-coder-v2:16b"
 )
-    
+
+# Optimized (quantized) variants for 32 GB VRAM
+OLLAMA_MODELS+=(
+    # Coding speed vs. accuracy
+    "codegemma:7b-code-q4_K_M"
+    "codegemma:7b-instruct-q8_0"
+    "codellama:70b-instruct-q4_K_M"
+
+    # LLMs speed vs. accuracy
+    "llama2:7b-chat-q4_K_M"
+    "mistral:7b-instruct-q8_0"
+    "gemma2:9b-instruct-q5_1"
+    "gemma2:27b-instruct-q4_K_M"
+    "llama3.2:3b-instruct-q4_K_M"
+    "llama3.3:70b-instruct-q4_K_M"
+
+    # Reasoning & Misc quantized
+    "deepseek-r1:8b-llama-distill-q4_K_M"
+)
+
+# Pull all models
+echo "Pulling Ollama models:"
 pull_ollama_models "${OLLAMA_MODELS[*]}"

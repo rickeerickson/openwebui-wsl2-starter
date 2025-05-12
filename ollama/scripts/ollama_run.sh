@@ -30,6 +30,35 @@ log_file="${script_dir}/${script_name}.log"
 
 # Default model name
 DEFAULT_MODEL="${DEFAULT_OLLAMA_MODELS[0]}"
+selected_model=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -m|--model)
+            if [[ -n "${2:-}" ]]; then
+                selected_model="$2"
+                shift 2
+            else
+                echo "Error: --model requires a value." >&2
+                exit 1
+            fi
+            ;;
+        -h|--help)
+            echo "Usage: $0 [-m|--model MODEL_NAME]"
+            echo "       $0 [-h|--help]"
+            echo
+            echo "Options:"
+            echo "  -m, --model MODEL_NAME   Specify the model name to use directly."
+            echo "  -h, --help               Show this help message and exit."
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            exit 1
+            ;;
+    esac
+done
 
 # List available models
 list_models() {
@@ -50,8 +79,12 @@ select_model() {
 }
 
 ensure_ollama_running
-list_models
-selected_model=$(select_model)
-echo "Selected model: ${selected_model}"
-echo "Running: ollama run \"${selected_model}\" --verbose"
-ollama run "${selected_model}" --verbose
+
+if [[ -z "${selected_model}" ]]; then
+    list_models
+    selected_model=$(select_model)
+fi
+
+echo "Selected model: ${selected_model:-$DEFAULT_MODEL}"
+echo "Running: ollama run \"${selected_model:-$DEFAULT_MODEL}\" --verbose"
+ollama run "${selected_model:-$DEFAULT_MODEL}" --verbose
