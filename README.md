@@ -6,6 +6,7 @@ This repository provides an automated setup script to install **OpenWebUI** and 
 
 - Sets up **WSL2** with Ubuntu.
 - Installs and configures **Docker** and **NVIDIA container toolkit**.
+- Detects an NVIDIA GPU before installing the toolkit.
 - Deploys **Ollama** and **OpenWebUI** Docker containers.
 - Includes customizable port and container configurations.
 
