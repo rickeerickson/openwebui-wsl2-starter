@@ -113,7 +113,7 @@ run_command() {
     done
 
     if [[ "${ignore_exit_status}" == "true" ]]; then
-        log_message "${prefix}${command} exitted with code ${command_exit_status}, ignoring exit status." "${LEVEL_WARNING}"
+        log_message "${prefix}${command} exited with code ${command_exit_status}, ignoring exit status." "${LEVEL_WARNING}"
         return 0
     fi
 
@@ -132,7 +132,31 @@ run_command() {
         return 1
     fi
 
+
     return 0
+}
+
+retry_logic() {
+    local retry_count="$1"
+    local max_retries="$2"
+    local fib1="$3"
+    local fib2="$4"
+    local command="$5"
+
+    if (( retry_count >= max_retries )); then
+        log_message "Failed to execute ${command} after ${max_retries} attempts." "${LEVEL_ERROR}"
+        return 1
+    fi
+
+    log_message "Retrying command '${command}' in ${fib1} seconds (attempt $((retry_count + 1))/${max_retries})..." "${LEVEL_WARNING}"
+    sleep "${fib1}"
+
+    local new_delay=$((fib1 + fib2))
+    fib1=$fib2
+    fib2=$new_delay
+    retry_count=$((retry_count + 1))
+
+    echo "${retry_count} ${fib1} ${fib2}"
 }
 
 run_command_with_retry() {
