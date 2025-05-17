@@ -318,6 +318,21 @@ verify_nvidia_environment() {
     run_command_with_retry "nvidia-smi"
 }
 
+check_nvidia_gpu() {
+    log_message "Checking for NVIDIA GPU..." "${LEVEL_INFO}"
+
+    if ! command -v lspci >/dev/null; then
+        log_message "Installing pciutils to detect GPU." "${LEVEL_INFO}"
+        run_command_with_retry "sudo apt-get update"
+        run_command_with_retry "sudo apt-get install -y pciutils"
+    fi
+
+    if ! lspci | grep -i nvidia >/dev/null; then
+        log_message "No NVIDIA GPU detected. This setup requires an NVIDIA GPU." "${LEVEL_ERROR}"
+        exit 1
+    fi
+}
+
 container_exists() {
     local container_name="$1"
     docker ps -a --filter "name=^${container_name}$" --format "{{.Names}}" | grep -q "^${container_name}$"
@@ -700,6 +715,8 @@ verify_open_webui_setup() {
 
 install_nvidia_container_toolkit() {
     log_message "Installing NVIDIA Container Toolkit..." "${LEVEL_INFO}"
+
+    check_nvidia_gpu
 
     # Download the NVIDIA GPG key and add it to the apt keyring
     curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
