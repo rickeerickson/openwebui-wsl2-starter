@@ -15,12 +15,23 @@ NVIDIA GPU support via `network=host`.
 **Linux/macOS (Bash):**
 
 ```bash
-bash build_and_test.sh
+bash build_and_test.sh            # run all checks
+bash build_and_test.sh --install  # install missing tools
+bash build_and_test.sh --fix      # auto-fix (markdownlint)
+bash build_and_test.sh --shell    # shellcheck + bash -n only
+bash build_and_test.sh --markdown # markdownlint only
+bash build_and_test.sh --powershell # pwsh parse + analyzer
+bash build_and_test.sh --test     # unit tests only
 ```
 
 Stages: `bash -n` syntax, PowerShell parse, shellcheck,
 markdownlint, PSScriptAnalyzer, unit tests. Skips linters
-gracefully if not installed.
+gracefully if not installed; use `--install` to bootstrap.
+
+`--install` installs: `shellcheck-py` (pip in `.venv/`),
+`markdownlint-cli` (brew/npm), `pwsh` (brew cask/apt),
+`PSScriptAnalyzer` (pwsh module). Always uses a Python venv
+at `.venv/` for pip-installed tools.
 
 **Windows (cmd):**
 
@@ -95,17 +106,45 @@ Functions check state before acting (idempotent):
 new container. Both Ollama and OpenWebUI follow this pattern
 via `stop_remove_run_*_container()` orchestrators.
 
+## Linter Configuration
+
+- `.shellcheckrc` - Global shellcheck suppressions: SC1090
+  (non-constant source), SC2154 (variable from sourced file),
+  SC2034 (appears unused, exported via source)
+- `.PSScriptAnalyzerSettings.psd1` - Excludes intentional
+  patterns: Write-Host, Invoke-Expression, ShouldProcess,
+  plural nouns, unused params, Write-Log override
+- `.gitattributes` - Line endings: CRLF for `.ps1`, `.psm1`,
+  `.psd1`, `.cmd`; LF for `.sh`, `.md`. Mixed-OS repo, so
+  line endings matter.
+- Markdown lines must stay under 80 characters (markdownlint
+  MD013 default)
+
 ## Shell Script Conventions
 
 - Strict mode everywhere: `set -euo pipefail` with ERR trap
   logging file, line, and command
 - `source_required_file()` pattern for safe sourcing with
-  existence checks
+  existence checks. This pattern causes shellcheck false
+  positives (SC1090, SC2154, SC2034), handled by
+  `.shellcheckrc`.
 - Leveled logging via `log_message()` with `VERBOSITY` control
 - `run_command()` wraps execution with logging,
   `ignore_exit_status`, and `should_fail` flags
 - Log files written adjacent to the running script
   (`${script_dir}/${script_name}.log`)
+
+### Bash Pitfalls in This Repo
+
+- `(( x++ ))` returns exit code 1 when x=0 under `set -e`.
+  Use `x=$(( x + 1 ))` instead.
+- SC2155: `local FOO=$(cmd)` masks return values. Always
+  declare and assign separately: `local foo; foo=$(cmd)`.
+- SC2076: Quoted RHS in `[[ $x =~ "pattern" ]]` does literal
+  match, not regex. Extract to a variable:
+  `local p="pattern"; [[ $x =~ ${p} ]]`.
+- `build_and_test.sh` uses `set -u` (not `set -euo pipefail`)
+  so it can track pass/fail counts without exiting early.
 
 ## PowerShell Conventions
 
