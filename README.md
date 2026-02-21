@@ -1,24 +1,19 @@
 # OpenWebUI WSL2 Setup
 
-This repository provides an automated setup script to install **OpenWebUI** and **Ollama** inside a WSL2 Ubuntu environment. It configures Docker, NVIDIA container tools, and ensures OpenWebUI runs successfully.
-
-## Features
-
-- Sets up **WSL2** with Ubuntu.
-- Installs and configures **Docker** and **NVIDIA container toolkit**.
-- Deploys **Ollama** and **OpenWebUI** Docker containers.
-- Includes customizable port and container configurations.
+Automated setup for **OpenWebUI** and **Ollama** inside a WSL2
+Ubuntu environment, with Docker, NVIDIA container tools, and
+customizable configuration.
 
 ## Prerequisites
 
-- Windows 10/11
-- Administrative privileges to run the setup script.
+- Windows 11
+- Administrative privileges
 
 ## Configuration
 
-The script reads configuration values from a `update_open-webui.config.sh` file. You can customize the following settings:
+Edit `update_open-webui.config.sh` before running setup to
+customize ports, container names, volumes, and default models.
 
-### `update_open-webui.config.sh`
 ```bash
 # Ollama Configuration
 OLLAMA_PORT=11434
@@ -40,81 +35,129 @@ DEFAULT_OLLAMA_MODELS=(
 )
 ```
 
-- Edit the `update_open-webui.config.sh` file to suit your network or container requirements.
+## Phase 1: Windows Setup (WSL2 + Ubuntu)
 
-## Usage
+Enables WSL2, installs Ubuntu, and configures the Windows host.
 
-1. **Clone this repository**:
-   ```bash
-   git clone git@github.com:<user_name>/openwebui-wsl2-starter.git
-   cd openwebui-wsl2-starter
-   ```
+```cmd
+RUNME.cmd
+```
 
-2. **Run the setup script**:
-   ```cmd
-   RUNME.cmd
-   ```
+This runs `RUNME.ps1`, which:
 
-   - The script will:
-     1. Ensure WSL2 and Ubuntu are set up.
-     2. Configure Docker and NVIDIA container tools.
-     3. Deploy **Ollama** and **OpenWebUI** using the settings in `update_open-webui.config.sh`.
+- Enables WSL and VirtualMachinePlatform Windows features
+- Installs or updates WSL2 and sets it as the default version
+- Installs the Ubuntu distribution
+- Configures Windows port proxy so the host can reach
+  WSL containers
 
-3. **Verify**:
-   - The script will launch WSL interactively and display `docker ps` to confirm that containers are running.
+Once Windows setup completes, it automatically hands off to
+Phase 2.
 
-## Customization
+**Standalone scripts** (in `powershell/`):
 
-- Update the `update_open-webui.config.sh` file to change container configuration.
-- Restart the setup to apply changes:
-   ```cmd
-   RUNME.cmd
-   ```
+- `Install-Ubuntu.ps1` - Install Ubuntu into WSL2
+- `Update-Wsl2.ps1` - Update WSL2
+- `Remove-Ubuntu.ps1` - Remove the Ubuntu distribution
 
-## Output
+## Phase 2: Ubuntu Setup (Docker, Containers, Models)
 
-At the end of the script:
-- OpenWebUI will be accessible at:
-   ```
-   http://localhost:3000
-   ```
-- Ollama will be running on:
-   ```
-   http://localhost:11434
-   ```
+Runs inside WSL2 via `update_open-webui.sh`. Installs the full
+stack:
+
+1. Updates system packages
+2. Installs Docker and the NVIDIA container toolkit
+3. Installs Ollama
+4. Deploys the Ollama container (port 11434)
+5. Deploys the OpenWebUI container (port 3000), connected
+   to Ollama via `OLLAMA_BASE_URL`
+6. Verifies both containers are running
+
+To re-run setup after changing configuration:
+
+```cmd
+RUNME.cmd
+```
+
+**Downloading models:**
+
+The default model (`llama3.2:1b`) is configured in
+`update_open-webui.config.sh`. To pull a broader set of models
+(coding, general, quantized variants for 32GB VRAM):
+
+```bash
+bash ollama/scripts/get_models.sh
+```
+
+## Phase 3: Usage
+
+After setup, OpenWebUI and Ollama are running as Docker
+containers with `--restart always`.
+
+**OpenWebUI (browser):**
+
+```text
+http://localhost:3000
+```
+
+**Ollama API:**
+
+```text
+http://localhost:11434
+```
+
+**Ollama CLI (interactive):**
+
+```bash
+# Interactive model selection
+bash ollama/scripts/ollama_run.sh
+
+# Specify a model directly
+bash ollama/scripts/ollama_run.sh --model llama3.2:1b
+```
+
+**Diagnostics:**
+
+```bash
+bash ollama/scripts/diagnose_ollama.sh
+bash open-webui/scripts/diagnose_open-webui.sh
+```
+
+PowerShell health checks are also available:
+
+```powershell
+.\ollama\scripts\Test-OllamaHealth.ps1
+.\open-webui\scripts\Test-OpenWebUIHealth.ps1
+```
 
 ## Logs
 
-The setup logs are stored in a file adjacent to the running script:
-```plaintext
+Setup logs are written adjacent to the running script:
+
+```text
 <ScriptDirectory>/update_open-webui.sh.log
 ```
 
 ## Troubleshooting
 
-1. **Port Conflicts**:
-   - Ensure the ports configured in `update_open-webui.config.sh` are available.
-   - Use the following to identify processes using a port:
-     ```bash
-     sudo lsof -i :<PORT>
-     ```
+**Port conflicts:**
 
-2. **Docker Issues**:
-   - Restart Docker if necessary:
-     ```bash
-     sudo systemctl restart docker
-     ```
+```bash
+sudo lsof -i :<PORT>
+```
 
-3. **NVIDIA Toolkit**:
-   - Verify the toolkit installation:
-     ```bash
-     nvidia-smi
-     ```
+**Docker issues:**
 
-## Contributions
+```bash
+sudo systemctl restart docker
+```
 
-Contributions are welcome! Please submit a pull request or open an issue.
+**NVIDIA toolkit:**
+
+```bash
+nvidia-smi
+```
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License.

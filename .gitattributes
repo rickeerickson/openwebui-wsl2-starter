@@ -1,3 +1,15 @@
-# * -text binary
+# Default: auto-detect
+* text=auto
+
+# Linux/WSL files: LF
 *.sh text eol=lf
 *.yaml text eol=lf
+
+# Windows files: CRLF
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+*.cmd text eol=crlf
+
+# Docs: LF (consumed in both environments, LF works everywhere)
+*.md text eol=lf

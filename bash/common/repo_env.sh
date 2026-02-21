@@ -25,8 +25,11 @@ script_dir="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 script_name="$(basename "$(realpath "${BASH_SOURCE[0]}")")"
 log_file="${script_dir}/${script_name}.log"
 
-readonly REPO_ROOT=$(get_git_root)
-readonly SEPARATOR_LONG=$(printf '=%.0s' {1..80})
+REPO_ROOT=$(get_git_root)
+readonly REPO_ROOT
+
+SEPARATOR_LONG=$(printf '=%.0s' {1..80})
+readonly SEPARATOR_LONG
 
 readonly LEVEL_ERROR=0
 readonly LEVEL_WARNING=1
@@ -39,8 +42,13 @@ readonly VERBOSITY_DEFAULT=${LEVEL_INFO}
 readonly LEVEL_PREFIX_PAD_STRING="WARNING:"
 readonly LEVEL_PREFIX_PAD_LENGTH="${#LEVEL_PREFIX_PAD_STRING}"
 
-readonly LEVEL_ERROR_PREFIX=$(pad_right "ERROR:" $LEVEL_PREFIX_PAD_LENGTH)
-readonly LEVEL_WARNING_PREFIX=$(pad_right "WARNING:" $LEVEL_PREFIX_PAD_LENGTH)
-readonly LEVEL_INFO_PREFIX=$(pad_right "INFO:" $LEVEL_PREFIX_PAD_LENGTH)
-readonly LEVEL_DEBUG_1_PREFIX=$(pad_right "DEBUG1:" $LEVEL_PREFIX_PAD_LENGTH)
-readonly LEVEL_DEBUG_2_PREFIX=$(pad_right "DEBUG2:" $LEVEL_PREFIX_PAD_LENGTH)
+LEVEL_ERROR_PREFIX=$(pad_right "ERROR:" "$LEVEL_PREFIX_PAD_LENGTH")
+readonly LEVEL_ERROR_PREFIX
+LEVEL_WARNING_PREFIX=$(pad_right "WARNING:" "$LEVEL_PREFIX_PAD_LENGTH")
+readonly LEVEL_WARNING_PREFIX
+LEVEL_INFO_PREFIX=$(pad_right "INFO:" "$LEVEL_PREFIX_PAD_LENGTH")
+readonly LEVEL_INFO_PREFIX
+LEVEL_DEBUG_1_PREFIX=$(pad_right "DEBUG1:" "$LEVEL_PREFIX_PAD_LENGTH")
+readonly LEVEL_DEBUG_1_PREFIX
+LEVEL_DEBUG_2_PREFIX=$(pad_right "DEBUG2:" "$LEVEL_PREFIX_PAD_LENGTH")
+readonly LEVEL_DEBUG_2_PREFIX

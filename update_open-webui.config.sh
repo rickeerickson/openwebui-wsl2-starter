@@ -1,3 +1,6 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2034  # Variables used by sourcing scripts.
+
 # Ollama Configuration
 OLLAMA_PORT=11434
 OLLAMA_HOST="localhost"

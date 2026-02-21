@@ -1,0 +1,12 @@
+# SC1090: Can't follow non-constant source.
+# Every script uses source_required_file() with a variable path.
+disable=SC1090
+
+# SC2154: Variable referenced but not assigned.
+# Variables are defined in sourced files (repo_env.sh, com_env.sh, config).
+disable=SC2154
+
+# SC2034: Variable appears unused.
+# Most .sh files are sourced libraries; their variables are consumed
+# by other scripts.
+disable=SC2034

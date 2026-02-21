@@ -45,7 +45,8 @@ log_message() {
             *) level_prefix="LOG:" ;;
         esac
 
-        local prefix="$(date '+%Y.%m.%d:%H:%M:%S') - ${level_prefix} "
+        local prefix
+        prefix="$(date '+%Y.%m.%d:%H:%M:%S') - ${level_prefix} "
 
         if [[ "${DEBUG:-false}" == "true" ]]; then
             prefix+="${log_file}: ${0}: ${BASH_SOURCE[1]}::${FUNCNAME[1]}::${BASH_LINENO[1]} - ${BASH_SOURCE[0]}::${FUNCNAME[0]}::${BASH_LINENO[0]} -> "
@@ -56,7 +57,8 @@ log_message() {
 }
 
 get_shell_options() {
-    local get_opts=$(set +o)
+    local get_opts
+    get_opts=$(set +o)
     echo "${get_opts}"
 }
 
@@ -288,8 +290,10 @@ verify_docker_environment() {
     if ! id -nG | grep -qw "docker"; then
         local border="===================================================================================================="
         local borderLength=${#border}
-        local reverse=$(tput rev)
-        local reset=$(tput sgr0)
+        local reverse
+        reverse=$(tput rev)
+        local reset
+        reset=$(tput sgr0)
         
         echo -e "${reverse}${border}${reset}"
         echo -e "${reverse}$(printf "%-${borderLength}s" "ERROR: The current shell does not reflect your membership in the 'docker' group.")${reset}"
@@ -539,7 +543,7 @@ stop_remove_run_ollama_container() {
     log_message "Stopping and removing Ollama container..." "${LEVEL_INFO}"
 
     stop_and_remove_container "${container_name}" || return 1
-    ensure_ollama_running $host $port $container_tag $container_name $volume_name || return 1
+    ensure_ollama_running "$host" "$port" "$container_tag" "$container_name" "$volume_name" || return 1
 
     wait_for_container_status_up "${container_name}" || return 1
     log_message "Ollama container started successfully." "${LEVEL_INFO}"
@@ -644,8 +648,8 @@ ensure_open_webui_running() {
                 --gpus all \
                 --network=host \
                 --volume "${open_webui_volume_name}:/app/backend/data" \
-                --env OLLAMA_BASE_URL=${ollama_url} \
-                --env PORT=${open_webui_port} \
+                --env OLLAMA_BASE_URL="${ollama_url}" \
+                --env PORT="${open_webui_port}" \
                 --name "${open_webui_container_name}" \
                 --restart always \
                 "ghcr.io/open-webui/open-webui:${open_webui_container_tag}"; then
@@ -733,7 +737,8 @@ pull_ollama_models() {
 
     log_message "Adding installed models to the list..." "${LEVEL_INFO}"
     for model in $installed_models; do
-        if [[ ! " ${models_list[@]} " =~ " ${model} " ]]; then
+        local pattern=" ${model} "
+        if [[ ! " ${models_list[*]} " =~ ${pattern} ]]; then
             models_list+=("$model")
         fi
     done
@@ -774,7 +779,7 @@ testOllamaPort() {
     && echo "TCP connection to port ${OLLAMA_PORT} succeeded!" \
     || echo "TCP connection to port ${OLLAMA_PORT} failed."
 
-  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" http://${OLLAMA_HOST}:${OLLAMA_PORT} 2>/dev/null)"
+  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" "http://${OLLAMA_HOST}:${OLLAMA_PORT}" 2>/dev/null)"
   if [[ "${http_code}" =~ ^[0-9]+$ ]]; then
     echo "HTTP response code on port ${OLLAMA_PORT}: ${http_code}"
   else
@@ -789,7 +794,7 @@ testOpenWebUIPort() {
     && echo "TCP connection to port ${OPEN_WEBUI_PORT} succeeded!" \
     || echo "TCP connection to port ${OPEN_WEBUI_PORT} failed."
 
-  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" http://${OPEN_WEBUI_HOST}:${OPEN_WEBUI_PORT} 2>/dev/null)"
+  http_code="$(curl -s -o /dev/null --write-out "%{http_code}" "http://${OPEN_WEBUI_HOST}:${OPEN_WEBUI_PORT}" 2>/dev/null)"
   if [[ "${http_code}" =~ ^[0-9]+$ ]]; then
     echo "HTTP response code on port ${OPEN_WEBUI_PORT}: ${http_code}"
   else
