@@ -3,6 +3,8 @@
 
 # Linux/WSL files: LF
 *.sh text eol=lf
+*.py text eol=lf
+*.toml text eol=lf
 *.yaml text eol=lf
 
 # Windows files: CRLF

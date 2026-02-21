@@ -1,0 +1,23 @@
+# OpenWebUI + Ollama Configuration
+# Single source of truth for ports, containers, volumes, and models.
+
+[ollama]
+host = "localhost"
+port = 11434
+container_tag = "latest"
+container_name = "ollama"
+volume_name = "ollama"
+image = "ollama/ollama"
+
+[openwebui]
+host = "localhost"
+port = 3000
+container_tag = "latest"
+container_name = "open-webui"
+volume_name = "open-webui"
+image = "ghcr.io/open-webui/open-webui"
+
+[models]
+default = [
+    "llama3.2:1b",
+]

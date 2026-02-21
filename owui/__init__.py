@@ -1,0 +1,1 @@
+"""OpenWebUI + Ollama setup automation."""
