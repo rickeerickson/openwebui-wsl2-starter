@@ -3,7 +3,7 @@
 # Lint, validate, and test the openwebui-wsl2-starter repo.
 #
 # Runs bash syntax checks, shellcheck, markdownlint, PowerShell
-# parse/lint, and unit tests. Missing tools are skipped gracefully.
+# parse/lint, and pytest. Missing tools are skipped gracefully.
 #
 # Usage:
 #   ./build_and_test.sh              # Run all checks
@@ -12,7 +12,7 @@
 #   ./build_and_test.sh --shell      # Shell checks only
 #   ./build_and_test.sh --markdown   # Markdown checks only
 #   ./build_and_test.sh --powershell # PowerShell checks only
-#   ./build_and_test.sh --test       # Tests only
+#   ./build_and_test.sh --test       # Tests only (pytest)
 #   ./build_and_test.sh --help       # Usage info
 
 set -u
@@ -20,8 +20,8 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${SCRIPT_DIR}/.venv"
 
-# Tools that can be installed via pip (run inside venv)
-PIP_TOOLS=(shellcheck-py)
+# Shell scripts to check (only bootstrap.sh now)
+SHELL_SCRIPTS=("${SCRIPT_DIR}/bootstrap.sh")
 
 # Colors
 RED='\033[0;31m'
@@ -153,8 +153,20 @@ install_pip_tool() {
 install_tools() {
     print_section_header "Installing missing tools"
 
-    # Prefer pip (shellcheck-py) for venv isolation,
-    # fall back to brew/apt
+    # Install owui package with dev dependencies (gets pytest)
+    if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+        echo -e "  ${BLUE}pip install -e '.[dev]'${NC}"
+        pip install --quiet -e "${SCRIPT_DIR}[dev]"
+    else
+        if setup_venv; then
+            echo -e "  ${BLUE}pip install -e '.[dev]'${NC}"
+            pip install --quiet -e "${SCRIPT_DIR}[dev]"
+        else
+            echo -e "  ${RED}Cannot install owui: no venv${NC}"
+        fi
+    fi
+
+    # Prefer pip (shellcheck-py) for venv isolation
     if ! command -v shellcheck &>/dev/null; then
         echo -e "  Installing shellcheck..."
         install_pip_tool "shellcheck-py" \
@@ -231,18 +243,20 @@ check_bash_syntax() {
     local fail_count=0
     local pass_count=0
 
-    while IFS= read -r -d '' sh_file; do
+    for sh_file in "${SHELL_SCRIPTS[@]}"; do
         local rel_path="${sh_file#"${SCRIPT_DIR}"/}"
+        if [[ ! -f "${sh_file}" ]]; then
+            echo -e "  ${YELLOW}[SKIP]${NC} ${rel_path} (not found)"
+            continue
+        fi
         if bash -n "${sh_file}" 2>&1; then
             echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
         else
             echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
         fi
-    done < <(find "${SCRIPT_DIR}" -name "*.sh" \
-        -not -path "*/.venv/*" -not -path "*/.git/*" \
-        -type f -print0)
+    done
 
     if [[ ${fail_count} -eq 0 ]]; then
         record_result "Bash syntax" "PASS" \
@@ -269,21 +283,23 @@ check_shellcheck() {
     local fail_count=0
     local pass_count=0
 
-    while IFS= read -r -d '' sh_file; do
+    for sh_file in "${SHELL_SCRIPTS[@]}"; do
         local rel_path="${sh_file#"${SCRIPT_DIR}"/}"
+        if [[ ! -f "${sh_file}" ]]; then
+            echo -e "  ${YELLOW}[SKIP]${NC} ${rel_path} (not found)"
+            continue
+        fi
         if shellcheck -x -S warning "${sh_file}" \
             >/dev/null 2>&1; then
             echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
         else
             echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
             shellcheck -x -S warning "${sh_file}" 2>&1 \
                 | head -20
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
         fi
-    done < <(find "${SCRIPT_DIR}" -name "*.sh" \
-        -not -path "*/.venv/*" -not -path "*/.git/*" \
-        -type f -print0)
+    done
 
     if [[ ${fail_count} -eq 0 ]]; then
         record_result "Shell lint" "PASS" \
@@ -320,11 +336,11 @@ check_markdown() {
         if markdownlint ${mdl_args[@]+"${mdl_args[@]}"} \
             "${md_file}" >/dev/null 2>&1; then
             echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
         else
             echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
             markdownlint "${md_file}" 2>&1 | head -20
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
         fi
     done < <(find "${SCRIPT_DIR}" -name "*.md" \
         -not -path "*/.venv/*" -not -path "*/.git/*" \
@@ -365,11 +381,11 @@ check_powershell_syntax() {
         " 2>&1) || true
         if [[ -z "${errors}" ]]; then
             echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
         else
             echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
             echo "${errors}"
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
         fi
     done < <(find "${SCRIPT_DIR}" \
         \( -name "*.ps1" -o -name "*.psm1" \) \
@@ -418,11 +434,11 @@ check_psscriptanalyzer() {
             2>&1)
         if [[ -z "${output}" ]]; then
             echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
         else
             echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
             echo "${output}"
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
         fi
     done < <(find "${SCRIPT_DIR}" \
         \( -name "*.ps1" -o -name "*.psm1" \) \
@@ -439,40 +455,42 @@ check_psscriptanalyzer() {
 }
 
 # -------------------------------------------------------------------
-# Check: Tests
+# Check: pytest
 # -------------------------------------------------------------------
 
-check_tests() {
-    print_section_header "Tests"
+check_pytest() {
+    print_section_header "Tests (pytest)"
 
-    local test_dir="${SCRIPT_DIR}/bash/tests"
+    local test_dir="${SCRIPT_DIR}/tests"
     if [[ ! -d "${test_dir}" ]]; then
-        echo -e "  ${YELLOW}[SKIP]${NC} test directory not found"
-        record_result "Tests" "SKIP" "test directory not found"
+        echo -e "  ${YELLOW}[SKIP]${NC} tests/ directory not found"
+        record_result "Tests" "SKIP" "tests/ directory not found"
         return
     fi
 
-    local fail_count=0
-    local pass_count=0
-
-    while IFS= read -r -d '' test_file; do
-        local rel_path="${test_file#"${SCRIPT_DIR}"/}"
-        if bash "${test_file}" >/dev/null 2>&1; then
-            echo -e "  ${GREEN}[OK]${NC}   ${rel_path}"
-            ((pass_count++))
-        else
-            echo -e "  ${RED}[FAIL]${NC} ${rel_path}"
-            bash "${test_file}" 2>&1 | tail -10
-            ((fail_count++))
+    if [[ -z "${VIRTUAL_ENV:-}" ]]; then
+        if ! setup_venv; then
+            echo -e "  ${RED}[SKIP]${NC} no venv available"
+            record_result "Tests" "SKIP" "no venv"
+            return
         fi
-    done < <(find "${test_dir}" -name "test_*.sh" -print0)
+    fi
 
-    if [[ ${fail_count} -eq 0 ]]; then
-        record_result "Tests" "PASS" \
-            "${pass_count} file(s) passed"
+    if ! command -v pytest &>/dev/null \
+        && ! python3 -m pytest --version &>/dev/null 2>&1; then
+        echo -e "  ${YELLOW}[SKIP]${NC} pytest not installed (rerun with --install)"
+        record_result "Tests" "SKIP" \
+            "pytest not installed (rerun with --install)"
+        return
+    fi
+
+    local output
+    if output=$(python3 -m pytest "${test_dir}" -v 2>&1); then
+        echo "${output}"
+        record_result "Tests" "PASS" "all tests passed"
     else
-        record_result "Tests" "FAIL" \
-            "${fail_count} failed, ${pass_count} passed"
+        echo "${output}"
+        record_result "Tests" "FAIL" "see output above"
     fi
 }
 
@@ -497,20 +515,20 @@ while [[ $# -gt 0 ]]; do
 Usage: ./build_and_test.sh [OPTIONS]
 
 Checks:
-  Bash syntax       bash -n on all .sh files
-  Shell lint        shellcheck on all .sh files
+  Bash syntax       bash -n on bootstrap.sh
+  Shell lint        shellcheck on bootstrap.sh
   Markdown lint     markdownlint on all .md files (--fix applies)
   PowerShell syntax pwsh parse on all .ps1/.psm1 files
   PowerShell lint   PSScriptAnalyzer on all .ps1/.psm1 files
-  Tests             bash test suites in bash/tests/
+  Tests             pytest on tests/
 
 Options:
-  --install        Install missing linters and tools
+  --install        Install missing linters, tools, and owui[dev]
   --fix            Auto-fix where possible (markdownlint)
   --shell          Run only shell checks (syntax + lint)
   --markdown       Run only markdown lint
   --powershell     Run only PowerShell checks
-  --test           Run only tests
+  --test           Run only tests (pytest)
   --help, -h       Show this help
 
 Multiple flags can be combined (e.g., --shell --markdown).
@@ -551,7 +569,7 @@ should_run "${RUN_SHELL}" && check_shellcheck
 should_run "${RUN_MARKDOWN}" && check_markdown
 should_run "${RUN_POWERSHELL}" && check_powershell_syntax
 should_run "${RUN_POWERSHELL}" && check_psscriptanalyzer
-should_run "${RUN_TEST}" && check_tests
+should_run "${RUN_TEST}" && check_pytest
 
 # -------------------------------------------------------------------
 # Summary
@@ -573,15 +591,15 @@ for i in "${!RESULT_NAMES[@]}"; do
     case "${local_status}" in
         PASS)
             echo -e "  ${GREEN}[PASS]${NC} ${local_name} - ${local_detail}"
-            ((pass_count++))
+            pass_count=$(( pass_count + 1 ))
             ;;
         FAIL)
             echo -e "  ${RED}[FAIL]${NC} ${local_name} - ${local_detail}"
-            ((fail_count++))
+            fail_count=$(( fail_count + 1 ))
             ;;
         SKIP)
             echo -e "  ${YELLOW}[SKIP]${NC} ${local_name} - ${local_detail}"
-            ((skip_count++))
+            skip_count=$(( skip_count + 1 ))
             ;;
     esac
 done

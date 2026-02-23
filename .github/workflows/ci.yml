@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package and dev deps
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run pytest
+        run: |
+          . .venv/bin/activate
+          python -m pytest tests/ -v
+
+  shellcheck:
+    name: Shell lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bash syntax check
+        run: bash -n bootstrap.sh
+
+      - name: Run shellcheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: "."
+          additional_files: "bootstrap.sh"
+          severity: warning
+
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
+  powershell:
+    name: PowerShell lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse check
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem -Recurse -Include *.ps1,*.psm1 |
+            ForEach-Object {
+              $errors = $null
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                $_.FullName, [ref]$null, [ref]$errors
+              ) | Out-Null
+              if ($errors.Count -gt 0) {
+                Write-Host "FAIL: $($_.FullName)"
+                $errors | ForEach-Object { Write-Host "  $_" }
+                $failed = $true
+              } else {
+                Write-Host "OK:   $($_.FullName)"
+              }
+            }
+          if ($failed) { exit 1 }
+
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+          $failed = $false
+          Get-ChildItem -Recurse -Include *.ps1,*.psm1 |
+            ForEach-Object {
+              $results = Invoke-ScriptAnalyzer `
+                -Path $_.FullName `
+                -Settings .PSScriptAnalyzerSettings.psd1 `
+                -Severity Warning,Error
+              if ($results) {
+                Write-Host "FAIL: $($_.FullName)"
+                $results | Format-Table -AutoSize
+                $failed = $true
+              } else {
+                Write-Host "OK:   $($_.FullName)"
+              }
+            }
+          if ($failed) { exit 1 }
