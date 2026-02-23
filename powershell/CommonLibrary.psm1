@@ -125,12 +125,6 @@ function Install-WslIfNeeded {
     }
 }
 
-function Update-Wsl {
-    Write-Log "Updating WSL..." $LEVEL_INFO
-    Start-CommandWithRetry "wsl --update"
-}
-
-
 function Set-WslVersionIfNeeded {
     Write-Log "Ensuring WSL 2 is the default version..." $LEVEL_INFO
     if (-not (wsl --list --verbose 2>&1 | Select-String "Version: 2")) {
@@ -223,32 +217,6 @@ function Start-WslScript {
         Write-Log "Error: The WSL script exited with code $LASTEXITCODE. Please re-run the 'RUNME' script.  If the issue continues, please report an issue in GitHub."
         exit $LASTEXITCODE
     }
-}
-
-function ParseBashConfig {
-    param(
-        [string]$FilePath
-    )
-    $result = @{}
-
-    if (-not (Test-Path $FilePath)) {
-        Write-Host "Config file not found: $FilePath"
-        return $result
-    }
-
-    $lines = Get-Content $FilePath
-    foreach ($line in $lines) {
-        if ($line -match '^\s*#' -or $line -match '^\s*$') {
-            continue
-        }
-        if ($line -match '^\s*([A-Z0-9_]+)=(.*)$') {
-            $varName = $Matches[1]
-            $varValue = $Matches[2].Trim()
-            $varValue = $varValue -replace '^["''](.*)["'']$', '$1'
-            $result[$varName] = $varValue
-        }
-    }
-    return $result
 }
 
 function Get-IPAddress {
@@ -443,32 +411,6 @@ function Enable-OpenWebUIPortProxyIfNeeded {
     }
 
     Write-Host "=== Done. ==="
-}
-
-Set-StrictMode -Version Latest
-
-function ParseBashConfig {
-    param(
-        [string]$FilePath
-    )
-    $result = @{}
-    if (-not (Test-Path $FilePath)) {
-        Write-Error "Config file not found: $FilePath"
-        return $result
-    }
-    $lines = Get-Content $FilePath
-    foreach ($line in $lines) {
-        if ($line -match '^\s*#' -or $line -match '^\s*$') {
-            continue
-        }
-        if ($line -match '^\s*([A-Z0-9_]+)=(.*)$') {
-            $varName = $Matches[1]
-            $varValue = $Matches[2].Trim()
-            $varValue = $varValue -replace '^["''](.*)["'']$', '$1'
-            $result[$varName] = $varValue
-        }
-    }
-    return $result
 }
 
 function Show-PortProxyErrors {

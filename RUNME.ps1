@@ -25,12 +25,16 @@ if (Get-Module -Name CommonLibrary) {
 }
 
 Import-Module "$repoRoot\powershell\CommonLibrary.psm1" -Force
-$configFilePath = "$repoRoot\update_open-webui.config.sh"
-
-Write-Host "=== Reading Bash config from: $($configFilePath) ==="
-$configVars = ParseBashConfig -FilePath $configFilePath
-
-$OPEN_WEBUI_PORT = if ($configVars["OPEN_WEBUI_PORT"]) { [int]$configVars["OPEN_WEBUI_PORT"] } else { 3000 }
+# Read port from config.toml via owui CLI
+$OPEN_WEBUI_PORT = 3000
+try {
+    $portOutput = wsl bash -c "cd '$( Convert-ToPath -WindowsPath $repoRoot )' && ./.venv/bin/owui config get openwebui.port" 2>$null
+    if ($portOutput -match '^\d+$') {
+        $OPEN_WEBUI_PORT = [int]$portOutput
+    }
+} catch {
+    Write-Log "Could not read port from config.toml, using default 3000" $LEVEL_WARNING
+}
 
 Write-Log "Setting up WSL and Ubuntu..." -ForegroundColor Cyan
 Request-AdminPrivileges
@@ -41,13 +45,9 @@ Install-WslDistributionInteractive -DistroName "Ubuntu"
 Write-Log "Starting OpenWebUI setup..." -ForegroundColor Cyan
 Stop-Wsl
 
-$wslScriptConfigPath = Convert-ToPath -WindowsPath "$PSScriptRoot\update_open-webui.config.sh"
-Set-ExecutableAttribute -Path $wslScriptConfigPath
-
-$wslScriptPath = Convert-ToPath -WindowsPath "$PSScriptRoot\update_open-webui.sh"
-Set-ExecutableAttribute -Path $wslScriptPath
-
-Start-WslScript -Path $wslScriptPath
+$bootstrapPath = Convert-ToPath -WindowsPath "$PSScriptRoot\bootstrap.sh"
+Set-ExecutableAttribute -Path $bootstrapPath
+Start-WslScript -Path $bootstrapPath
 
 $ipAddress = Get-IPAddress
 Enable-OpenWebUIPortProxyIfNeeded -ListenAddress $ipAddress -ListenPort $OPEN_WEBUI_PORT -ConnectAddress "127.0.0.1" -ConnectPort $OPEN_WEBUI_PORT

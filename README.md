@@ -1,43 +1,47 @@
 # OpenWebUI WSL2 Setup
 
-Automated setup for **OpenWebUI** and **Ollama** inside a WSL2
-Ubuntu environment, with Docker, NVIDIA container tools, and
-customizable configuration.
+Automated setup for **OpenWebUI** and **Ollama** inside a
+WSL2 Ubuntu environment, with Docker, NVIDIA container
+tools, and customizable configuration.
 
 ## Prerequisites
 
 - Windows 11
 - Administrative privileges
+- Python 3.11+ (in WSL2; bootstrap.sh checks for it)
 
 ## Configuration
 
-Edit `update_open-webui.config.sh` before running setup to
-customize ports, container names, volumes, and default models.
+Edit `config.toml` before running setup to customize ports,
+container names, volumes, and default models.
 
-```bash
-# Ollama Configuration
-OLLAMA_PORT=11434
-OLLAMA_HOST="localhost"
-OLLAMA_CONTAINER_TAG="latest"
-OLLAMA_CONTAINER_NAME="ollama"
-OLLAMA_VOLUME_NAME="ollama"
+```toml
+[ollama]
+host = "localhost"
+port = 11434
+container_tag = "latest"
+container_name = "ollama"
+volume_name = "ollama"
+image = "ollama/ollama"
 
-# Open WebUI Configuration
-OPEN_WEBUI_PORT=3000
-OPEN_WEBUI_HOST="localhost"
-OPEN_WEBUI_CONTAINER_TAG="latest"
-OPEN_WEBUI_CONTAINER_NAME="open-webui"
-OPEN_WEBUI_VOLUME_NAME="open-webui"
+[openwebui]
+host = "localhost"
+port = 3000
+container_tag = "latest"
+container_name = "open-webui"
+volume_name = "open-webui"
+image = "ghcr.io/open-webui/open-webui"
 
-# Default Ollama Models
-DEFAULT_OLLAMA_MODELS=(
-    "llama3.2:1b"
-)
+[models]
+default = [
+    "llama3.2:1b",
+]
 ```
 
 ## Phase 1: Windows Setup (WSL2 + Ubuntu)
 
-Enables WSL2, installs Ubuntu, and configures the Windows host.
+Enables WSL2, installs Ubuntu, and configures the Windows
+host.
 
 ```cmd
 RUNME.cmd
@@ -46,13 +50,13 @@ RUNME.cmd
 This runs `RUNME.ps1`, which:
 
 - Enables WSL and VirtualMachinePlatform Windows features
-- Installs or updates WSL2 and sets it as the default version
+- Installs or updates WSL2 and sets it as default
 - Installs the Ubuntu distribution
 - Configures Windows port proxy so the host can reach
   WSL containers
 
-Once Windows setup completes, it automatically hands off to
-Phase 2.
+Once Windows setup completes, it automatically hands off
+to Phase 2.
 
 **Standalone scripts** (in `powershell/`):
 
@@ -62,15 +66,16 @@ Phase 2.
 
 ## Phase 2: Ubuntu Setup (Docker, Containers, Models)
 
-Runs inside WSL2 via `update_open-webui.sh`. Installs the full
-stack:
+Runs inside WSL2 via `bootstrap.sh`, which creates a
+Python venv, installs the `owui` package, and runs
+`owui setup`. The setup flow:
 
 1. Updates system packages
 2. Installs Docker and the NVIDIA container toolkit
-3. Installs Ollama
-4. Deploys the Ollama container (port 11434)
-5. Deploys the OpenWebUI container (port 3000), connected
-   to Ollama via `OLLAMA_BASE_URL`
+3. Deploys the Ollama container (port 11434)
+4. Deploys the OpenWebUI container (port 3000),
+   connected to Ollama via `OLLAMA_BASE_URL`
+5. Pulls configured models
 6. Verifies both containers are running
 
 To re-run setup after changing configuration:
@@ -79,14 +84,10 @@ To re-run setup after changing configuration:
 RUNME.cmd
 ```
 
-**Downloading models:**
-
-The default model (`llama3.2:1b`) is configured in
-`update_open-webui.config.sh`. To pull a broader set of models
-(coding, general, quantized variants for 32GB VRAM):
+Or directly in WSL2:
 
 ```bash
-bash ollama/scripts/get_models.sh
+./bootstrap.sh
 ```
 
 ## Phase 3: Usage
@@ -106,21 +107,35 @@ http://localhost:3000
 http://localhost:11434
 ```
 
-**Ollama CLI (interactive):**
+**CLI commands** (activate the venv first, or use
+`bootstrap.sh` which handles this):
 
 ```bash
 # Interactive model selection
-bash ollama/scripts/ollama_run.sh
+owui run
 
-# Specify a model directly
-bash ollama/scripts/ollama_run.sh --model llama3.2:1b
+# Run a specific model
+owui run --model llama3.2:1b
+
+# Pull configured models
+owui models pull
+
+# List installed models
+owui models list
+
+# Show full config
+owui config show
+
+# Get a specific config value
+owui config get openwebui.port
 ```
 
 **Diagnostics:**
 
 ```bash
-bash ollama/scripts/diagnose_ollama.sh
-bash open-webui/scripts/diagnose_open-webui.sh
+owui diagnose              # all checks
+owui diagnose ollama       # Ollama only
+owui diagnose openwebui    # OpenWebUI only
 ```
 
 PowerShell health checks are also available:
@@ -132,10 +147,13 @@ PowerShell health checks are also available:
 
 ## Logs
 
-Setup logs are written adjacent to the running script:
+Setup logs are written by the `owui` logger. Increase
+verbosity with `-v` (repeat for more) or suppress
+non-error output with `-q`:
 
-```text
-<ScriptDirectory>/update_open-webui.sh.log
+```bash
+owui -v setup
+owui -vv diagnose
 ```
 
 ## Troubleshooting
