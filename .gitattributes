@@ -3,7 +3,12 @@
 
 # Linux/WSL files: LF
 *.sh text eol=lf
+*.bash text eol=lf
 *.yaml text eol=lf
+
+# Go: LF
+*.go text eol=lf diff=golang
+Makefile text eol=lf
 
 # Windows files: CRLF
 *.ps1 text eol=crlf
@@ -11,5 +16,19 @@
 *.psd1 text eol=crlf
 *.cmd text eol=crlf
 
-# Docs: LF (consumed in both environments, LF works everywhere)
-*.md text eol=lf
+# Docs
+*.md text eol=lf diff=markdown
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.gz binary
+
+# Lock files
+*.lock -merge

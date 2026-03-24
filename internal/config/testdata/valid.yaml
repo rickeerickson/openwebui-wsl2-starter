@@ -1,0 +1,26 @@
+ollama:
+  port: 11434
+  host: localhost
+  image: ollama/ollama
+  tag: latest
+  container: ollama
+  volume: ollama
+  models:
+    - llama3.2:1b
+
+openwebui:
+  port: 3000
+  host: localhost
+  image: ghcr.io/open-webui/open-webui
+  tag: latest
+  container: open-webui
+  volume: open-webui
+
+wsl:
+  distro: Ubuntu
+
+proxy:
+  listen_address: "0.0.0.0"
+  listen_port: 3000
+  connect_address: "127.0.0.1"
+  connect_port: 3000
