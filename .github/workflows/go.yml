@@ -1,4 +1,4 @@
-name: Go
+name: CI
 
 on:
   push:
@@ -15,6 +15,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - name: Shell and markdown checks
+        run: bash build_and_test.sh --shell --markdown
 
       - run: go vet ./...
 
