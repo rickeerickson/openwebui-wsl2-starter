@@ -40,7 +40,7 @@ func NewLogger(logPath string, verbosity Level) (*Logger, error) {
 	}
 
 	if logPath != "" {
-		f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600) //nolint:gosec // G304: path from trusted caller
 		if err != nil {
 			return nil, fmt.Errorf("open log file %s: %w", logPath, err)
 		}

@@ -96,7 +96,7 @@ func Defaults() Config {
 func LoadFromFile(path string) (Config, error) {
 	cfg := Defaults()
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G304: path comes from trusted caller, validated externally
 	if err != nil {
 		return Config{}, fmt.Errorf("reading config file: %w", err)
 	}

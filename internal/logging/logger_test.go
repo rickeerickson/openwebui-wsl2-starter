@@ -142,7 +142,7 @@ func TestVerbosityFromEnv(t *testing.T) {
 			if tt.set {
 				t.Setenv("OW_VERBOSITY", tt.value)
 			} else {
-				os.Unsetenv("OW_VERBOSITY")
+				_ = os.Unsetenv("OW_VERBOSITY")
 			}
 
 			got := VerbosityFromEnv()
