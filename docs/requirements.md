@@ -29,7 +29,7 @@ non-Ubuntu WSL distributions.
 - FR-WIN-2: Install WSL2 and set it as the default version.
 - FR-WIN-3: Install Ubuntu as the WSL2 distribution,
   prompting the user to create a Linux username and password.
-- FR-WIN-4: Run the Linux setup script inside WSL from Windows
+- FR-WIN-4: Run the Linux CLI inside WSL from Windows
   without manual intervention after initial user prompts.
 - FR-WIN-5: Set up a Windows port proxy so that OpenWebUI
   on WSL2 is reachable from the Windows host and LAN clients.
@@ -60,11 +60,12 @@ non-Ubuntu WSL distributions.
 
 - FR-CFG-1: All ports, hostnames, container names, image tags,
   and default models are defined in a single config file
-  (`update_open-webui.config.sh`).
-- FR-CFG-2: The config file must be readable by both Bash
-  scripts and PowerShell scripts without duplication.
-- FR-CFG-3: Default models are configurable as a Bash array
-  (`DEFAULT_OLLAMA_MODELS`).
+  (`ow.yaml`).
+- FR-CFG-2: Config supports override via file, environment
+  variables, and CLI flags, resolved in a defined order.
+- FR-CFG-3: Default models are configurable as a YAML list.
+- FR-CFG-4: All config values must be validated at load time
+  before any system commands execute.
 
 ### Idempotency
 
@@ -79,10 +80,10 @@ non-Ubuntu WSL distributions.
 
 ### Diagnostics and Health Checks
 
-- FR-DGN-1: Provide Bash scripts to diagnose Ollama and
-  OpenWebUI from inside WSL.
-- FR-DGN-2: Provide PowerShell scripts to diagnose Ollama and
-  OpenWebUI from the Windows host.
+- FR-DGN-1: Provide a diagnose subcommand from inside WSL
+  for Ollama and OpenWebUI.
+- FR-DGN-2: Provide a diagnose subcommand from the Windows
+  host for Ollama and OpenWebUI.
 - FR-DGN-3: Diagnostics must report: system info, network
   interfaces, listening ports, TCP connectivity, HTTP response
   codes, Docker status, and container logs.
@@ -91,8 +92,8 @@ non-Ubuntu WSL distributions.
 
 - FR-UTL-1: Provide an interactive Ollama model runner that
   lists installed models and accepts a model selection.
-- FR-UTL-2: Provide a bulk model pull script with a curated
-  list of models organized by category.
+- FR-UTL-2: Provide a model pull subcommand that pulls all
+  models listed in config.
 
 ---
 
@@ -122,37 +123,54 @@ non-Ubuntu WSL distributions.
 
 ### Correctness
 
-- NFR-COR-1: All Bash scripts must use strict mode:
-  `set -euo pipefail` with an ERR trap.
-- NFR-COR-2: All PowerShell scripts must use
-  `Set-StrictMode -Version Latest` and
-  `$ErrorActionPreference = 'Stop'`.
-- NFR-COR-3: Shell scripts must pass shellcheck with
-  suppressions documented in `.shellcheckrc`.
-- NFR-COR-4: PowerShell scripts must pass PSScriptAnalyzer
-  with suppressions documented in `.PSScriptAnalyzerSettings.psd1`.
-- NFR-COR-5: Markdown files must pass markdownlint with lines
+- NFR-COR-1: Go code must pass `golangci-lint` with security
+  linters enabled (`gosec`, `gocritic`, `bodyclose`, `noctx`).
+- NFR-COR-2: Go code must pass `go vet` with no warnings.
+- NFR-COR-3: Markdown files must pass markdownlint with lines
   under 80 characters.
+- NFR-COR-4: Dependencies must pass `govulncheck` with no
+  known CVEs.
+
+### Security
+
+- NFR-SEC-1: Command execution must use `os/exec.Command`
+  with explicit argument lists. No shell string interpolation.
+- NFR-SEC-2: The command runner must enforce an allowlist of
+  permitted executables.
+- NFR-SEC-3: All config values must be validated against
+  strict patterns before use in any system command.
+- NFR-SEC-4: All `exec.Command` invocations must be logged
+  with the full argument list for audit.
+- NFR-SEC-5: Log files must be written with restrictive
+  permissions (0600).
+
+### Testability
+
+- NFR-TST-1: All `internal/` packages must have unit tests.
+- NFR-TST-2: The command runner must be mockable so tests
+  can verify behavior without real shell-outs.
+- NFR-TST-3: Mutation testing must run at each milestone.
+  `internal/` packages must achieve a mutation score of 80%
+  or higher.
+- NFR-TST-4: CI must build, lint, and test on every push
+  and PR.
 
 ### Maintainability
 
-- NFR-MNT-1: Common logic must live in shared library files
-  (`repo_lib.sh`, `CommonLibrary.psm1`); component scripts
-  must not duplicate it.
-- NFR-MNT-2: Each component (Ollama, OpenWebUI) must have
-  its own `common/` directory that sources the base library.
-- NFR-MNT-3: Safe file sourcing must use `source_required_file()`
-  to validate existence before sourcing.
-- NFR-MNT-4: A build-and-test script must check syntax, lint,
-  and run unit tests for all scripts.
+- NFR-MNT-1: Shared logic (config, logging, retry, exec)
+  must live in `internal/` packages compiled on both
+  platforms.
+- NFR-MNT-2: Platform-specific code must use Go build tags
+  or `_windows.go` / `_linux.go` suffixes.
+- NFR-MNT-3: External dependencies must be minimal. Prefer
+  the standard library where practical.
 
 ### Cross-Platform
 
-- NFR-XPL-1: Line endings must be enforced via `.gitattributes`:
-  CRLF for `.ps1`, `.psm1`, `.psd1`, `.cmd`; LF for `.sh`,
-  `.md`.
-- NFR-XPL-2: Windows-to-WSL path conversion (`C:\path` to
-  `/mnt/c/path`) must be handled by a shared utility function.
+- NFR-XPL-1: Both CLIs build from the same Go module using
+  `GOOS=windows` and `GOOS=linux`.
+- NFR-XPL-2: The CLI binary name is `ow` on both platforms.
+  Subcommands work the same way regardless of OS.
 
 ### Performance
 
