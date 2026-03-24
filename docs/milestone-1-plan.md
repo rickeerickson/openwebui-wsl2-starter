@@ -1,6 +1,6 @@
 # Milestone 1: Foundation
 
-Status: **In Progress**
+Status: **Complete**
 
 ## Goal
 
@@ -12,41 +12,41 @@ testing. No CLI subcommands yet; those are Milestone 2.
 
 - [x] Go installed (1.26.1)
 - [x] golangci-lint installed (2.11.4)
-- [ ] gremlins installed (for mutation testing)
+- [x] gremlins installed (0.6.0)
 
 ## Wave 1: Project Scaffold (sequential)
 
-| PR  | Scope                                   | Status  |
-|-----|-----------------------------------------|---------|
-| 1.1 | go.mod, project structure, Makefile     | pending |
+| PR  | Scope                                   | Status    |
+|-----|-----------------------------------------|-----------|
+| 1.1 | go.mod, project structure, Makefile     | committed |
 
 ## Wave 2: Independent Packages (3 parallel agents)
 
-| PR  | Scope                                   | Status  |
-|-----|-----------------------------------------|---------|
-| 1.3 | `internal/logging` with tests           | pending |
-| 1.5 | `internal/exec` retry with tests        | pending |
-| 1.6 | `internal/config` struct, YAML, validate| pending |
+| PR  | Scope                                   | Status    |
+|-----|-----------------------------------------|-----------|
+| 1.3 | `internal/logging` with tests           | committed |
+| 1.5 | `internal/exec` retry with tests        | committed |
+| 1.6 | `internal/config` struct, YAML, validate| committed |
 
 ## Wave 3: Dependent Packages (2 parallel agents)
 
-| PR  | Scope                                   | Status  |
-|-----|-----------------------------------------|---------|
-| 1.4 | `internal/exec` runner + allowlist      | pending |
-| 1.7 | `internal/config` env + flag override   | pending |
+| PR  | Scope                                   | Status    |
+|-----|-----------------------------------------|-----------|
+| 1.4 | `internal/exec` runner + allowlist      | committed |
+| 1.7 | `internal/config` env + flag override   | committed |
 
 ## Wave 4: Infrastructure (2 parallel agents)
 
-| PR  | Scope                                   | Status  |
-|-----|-----------------------------------------|---------|
-| 1.2 | CI workflow (GitHub Actions)            | pending |
-| 1.8 | `.golangci.yml` with security linters   | pending |
+| PR  | Scope                                   | Status    |
+|-----|-----------------------------------------|-----------|
+| 1.2 | CI workflow (GitHub Actions)            | committed |
+| 1.8 | `.golangci.yml` with security linters   | committed |
 
 ## Wave 5: Mutation Testing (sequential)
 
-| PR  | Scope                                   | Status  |
-|-----|-----------------------------------------|---------|
-| 1.9 | Mutation test, fix gaps, merge          | pending |
+| PR  | Scope                                   | Status    |
+|-----|-----------------------------------------|-----------|
+| 1.9 | Mutation test, fix gaps, merge          | committed |
 
 ## Dependency Graph
 

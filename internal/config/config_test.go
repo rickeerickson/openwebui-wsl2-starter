@@ -139,6 +139,22 @@ func TestValidate_PortNegative(t *testing.T) {
 	assertContains(t, err.Error(), "ollama.port")
 }
 
+func TestValidate_PortBoundaryOne(t *testing.T) {
+	cfg := Defaults()
+	cfg.Ollama.Port = 1
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("port 1 should be valid, got: %v", err)
+	}
+}
+
+func TestValidate_PortBoundary65535(t *testing.T) {
+	cfg := Defaults()
+	cfg.Ollama.Port = 65535
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("port 65535 should be valid, got: %v", err)
+	}
+}
+
 func TestValidate_ContainerNameInjection(t *testing.T) {
 	cfg := Defaults()
 	cfg.Ollama.Container = "; rm -rf /"
