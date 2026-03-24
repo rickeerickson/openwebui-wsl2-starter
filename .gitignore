@@ -83,6 +83,13 @@ kubectl.sha256
 CACHEDIR.TAG
 .rustc_info.json
 
+# Go
+coverage.out
+*.test
+
+# Backup files
+*~
+
 # runbooks
 *.docx
 abc/runbooks/Consolidated_Runbooks_For_ChatGPT.txt
