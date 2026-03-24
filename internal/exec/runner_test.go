@@ -132,8 +132,8 @@ func TestRunWithRetryRetriesOnFailure(t *testing.T) {
 	var buf bytes.Buffer
 	r := newTestRunner(t, &buf)
 
-	// sh -c script that fails twice then succeeds using a temp file as counter.
-	// We use RunWithRetry on "false" with 2 attempts to confirm retry happens.
+	// Run "false" with 2 attempts to confirm retry occurs and error is
+	// returned after the final attempt.
 	opts := RetryOpts{MaxAttempts: 2, InitialA: time.Millisecond, InitialB: time.Millisecond}
 	_, err := r.RunWithRetry(context.Background(), opts, "false")
 	if err == nil {
@@ -206,4 +206,27 @@ func TestRunEmptyCommandName(t *testing.T) {
 	if !strings.Contains(err.Error(), "empty command name") {
 		t.Errorf("error = %q, want it to contain 'empty command name'", err.Error())
 	}
+}
+
+func TestRunWithRetryMaxAttemptsZero(t *testing.T) {
+	var buf bytes.Buffer
+	r := newTestRunner(t, &buf)
+
+	opts := RetryOpts{MaxAttempts: 0, InitialA: time.Millisecond, InitialB: time.Millisecond}
+	_, err := r.RunWithRetry(context.Background(), opts, "echo", "hello")
+	if err == nil {
+		t.Fatal("expected error for MaxAttempts=0")
+	}
+	if !strings.Contains(err.Error(), "MaxAttempts must be >= 1") {
+		t.Errorf("error = %q, want MaxAttempts validation message", err.Error())
+	}
+}
+
+func TestNewRunnerPanicsOnNilLogger(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for nil logger")
+		}
+	}()
+	NewRunner(nil)
 }

@@ -19,9 +19,9 @@ import (
 // Later sources override earlier ones.
 // Returns the resolved and validated config.
 //
-// Note: ollama.models cannot be set via environment variables because viper
-// handles string slices from env vars poorly. Models can only be set via
-// YAML file or flags.
+// Note: ollama.models cannot be set via environment variables or CLI flags
+// because viper and the flags map[string]string handle string slices poorly.
+// Models should be set via YAML configuration files.
 func Resolve(flags map[string]string) (Config, error) {
 	v := viper.New()
 

@@ -21,6 +21,14 @@ type RealRunner struct {
 	AllowedBins map[string]bool // nil means use default allowlist
 }
 
+// NewRunner creates a RealRunner with the given logger.
+func NewRunner(logger *logging.Logger) *RealRunner {
+	if logger == nil {
+		panic("exec.NewRunner: logger must not be nil")
+	}
+	return &RealRunner{Logger: logger}
+}
+
 // Run executes a single command after validating it against the allowlist.
 func (r *RealRunner) Run(ctx context.Context, name string, args ...string) (string, error) {
 	if name == "" {
@@ -47,6 +55,10 @@ func (r *RealRunner) Run(ctx context.Context, name string, args ...string) (stri
 
 // RunWithRetry calls Run in a loop with Fibonacci backoff per RetryOpts.
 func (r *RealRunner) RunWithRetry(ctx context.Context, opts RetryOpts, name string, args ...string) (string, error) {
+	if opts.MaxAttempts < 1 {
+		return "", fmt.Errorf("MaxAttempts must be >= 1, got %d", opts.MaxAttempts)
+	}
+
 	a := opts.InitialA
 	b := opts.InitialB
 
