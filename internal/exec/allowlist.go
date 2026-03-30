@@ -4,6 +4,13 @@ package exec
 var defaultAllowedBins = map[string]bool{
 	"docker":         true,
 	"apt-get":        true,
+	"dpkg":           true,
+	"sh":             true,
+	"install":        true,
+	"chmod":          true,
+	"usermod":        true,
+	"systemctl":      true,
+	"nvidia-ctk":     true,
 	"wsl.exe":        true,
 	"netsh":          true,
 	"powershell.exe": true,
