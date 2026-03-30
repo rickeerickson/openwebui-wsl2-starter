@@ -18,6 +18,9 @@ var defaultAllowedBins = map[string]bool{
 	"curl":           true,
 	"lsof":           true,
 	"nvidia-smi":     true,
+	"cat":            true,
+	"ip":             true,
+	"ping":           true,
 }
 
 // allowedBins returns the runner's AllowedBins if set, otherwise the default.
