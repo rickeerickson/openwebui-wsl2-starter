@@ -44,34 +44,19 @@ func (i *Installer) Install(ctx context.Context) error {
 
 	i.Logger.Info("installing NVIDIA Container Toolkit")
 
-	// Download GPG key.
-	gpgKey, err := i.Runner.Run(ctx, "curl", "-fsSL", gpgKeyURL)
-	if err != nil {
-		return fmt.Errorf("download GPG key: %w", err)
-	}
-
-	// Dearmor and write the keyring. We pass the key via stdin by writing
-	// it to a temp approach. Since we cannot pipe, we use sh -c.
-	// Actually, the runner doesn't support stdin. Write key to a temp file
-	// approach would need filesystem access. Instead, use sh -c for the
-	// gpg dearmor step.
+	// Download GPG key and dearmor it in a single pipeline.
+	// Avoids interpolating remote content into a shell command string.
 	_, err = i.Runner.Run(ctx, "sh", "-c",
-		fmt.Sprintf("echo '%s' | gpg --dearmor --yes -o %s", gpgKey, keyringPath))
+		fmt.Sprintf("curl -fsSL %s | gpg --dearmor --yes -o %s", gpgKeyURL, keyringPath))
 	if err != nil {
-		return fmt.Errorf("dearmor GPG key: %w", err)
+		return fmt.Errorf("download and dearmor GPG key: %w", err)
 	}
 
-	// Download and configure the apt repository list.
-	repoList, err := i.Runner.Run(ctx, "curl", "-s", "-L", repoListURL)
-	if err != nil {
-		return fmt.Errorf("download repo list: %w", err)
-	}
-
-	// Add signed-by to the repo entries and write to the sources list.
-	signedRepo := strings.ReplaceAll(repoList, "deb https://",
-		fmt.Sprintf("deb [signed-by=%s] https://", keyringPath))
+	// Download repo list, add signed-by directive, and write to sources.
+	// All done in a single pipeline to avoid interpolating remote content.
 	_, err = i.Runner.Run(ctx, "sh", "-c",
-		fmt.Sprintf("echo '%s' > %s", signedRepo, repoFile))
+		fmt.Sprintf("curl -s -L %s | sed 's#deb https://#deb [signed-by=%s] https://#g' > %s",
+			repoListURL, keyringPath, repoFile))
 	if err != nil {
 		return fmt.Errorf("write repo list: %w", err)
 	}

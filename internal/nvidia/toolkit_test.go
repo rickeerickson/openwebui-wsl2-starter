@@ -98,8 +98,6 @@ func TestInstallRunsFullSequenceWhenMissing(t *testing.T) {
 	// dpkg check fails (package not installed).
 	m.errors[m.key("dpkg", "-l", "nvidia-container-toolkit")] =
 		fmt.Errorf("dpkg-query: no packages found")
-	m.outputs[m.key("curl", "-fsSL", gpgKeyURL)] = "FAKE-GPG-KEY"
-	m.outputs[m.key("curl", "-s", "-L", repoListURL)] = "deb https://nvidia.github.io/libnvidia-container/stable/deb amd64/"
 
 	inst := NewInstaller(m, newTestLogger(t))
 	err := inst.Install(context.Background())
@@ -107,9 +105,10 @@ func TestInstallRunsFullSequenceWhenMissing(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify full install sequence: dpkg, curl gpg, sh gpg, curl repo, sh repo, apt-get update, apt-get install.
-	if m.callCount() < 6 {
-		t.Errorf("expected at least 6 calls, got %d: %+v", m.callCount(), m.calls)
+	// Verify full install sequence: dpkg, sh (gpg pipeline), sh (repo pipeline),
+	// apt-get update, apt-get install.
+	if m.callCount() < 5 {
+		t.Errorf("expected at least 5 calls, got %d: %+v", m.callCount(), m.calls)
 	}
 
 	if !m.called("apt-get", "install", "-y", "nvidia-container-toolkit") {
@@ -121,14 +120,21 @@ func TestInstallGPGKeyUsesCorrectURL(t *testing.T) {
 	m := newMockRunner()
 	m.errors[m.key("dpkg", "-l", "nvidia-container-toolkit")] =
 		fmt.Errorf("not installed")
-	m.outputs[m.key("curl", "-fsSL", gpgKeyURL)] = "KEY"
-	m.outputs[m.key("curl", "-s", "-L", repoListURL)] = "deb https://example.com/ amd64/"
 
 	inst := NewInstaller(m, newTestLogger(t))
 	_ = inst.Install(context.Background())
 
-	if !m.called("curl", "-fsSL", gpgKeyURL) {
-		t.Errorf("expected curl call with GPG key URL %s", gpgKeyURL)
+	// The GPG key download is now a pipeline inside sh -c.
+	found := false
+	for _, c := range m.calls {
+		if c.Name == "sh" && len(c.Args) >= 2 &&
+			strings.Contains(c.Args[1], gpgKeyURL) &&
+			strings.Contains(c.Args[1], "gpg --dearmor") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected sh -c pipeline with GPG key URL %s", gpgKeyURL)
 	}
 }
 
@@ -136,30 +142,22 @@ func TestInstallAddsCorrectAptRepository(t *testing.T) {
 	m := newMockRunner()
 	m.errors[m.key("dpkg", "-l", "nvidia-container-toolkit")] =
 		fmt.Errorf("not installed")
-	m.outputs[m.key("curl", "-fsSL", gpgKeyURL)] = "KEY"
-	m.outputs[m.key("curl", "-s", "-L", repoListURL)] =
-		"deb https://nvidia.github.io/libnvidia-container/stable/deb amd64/"
 
 	inst := NewInstaller(m, newTestLogger(t))
 	_ = inst.Install(context.Background())
 
-	if !m.called("curl", "-s", "-L", repoListURL) {
-		t.Errorf("expected curl call with repo list URL %s", repoListURL)
-	}
-
-	// The sh -c call should contain signed-by.
+	// The repo setup is now a pipeline: curl | sed > file.
 	found := false
 	for _, c := range m.calls {
-		if c.Name == "sh" && len(c.Args) >= 2 {
-			combined := strings.Join(c.Args, " ")
-			if strings.Contains(combined, "signed-by=") &&
-				strings.Contains(combined, repoFile) {
-				found = true
-			}
+		if c.Name == "sh" && len(c.Args) >= 2 &&
+			strings.Contains(c.Args[1], repoListURL) &&
+			strings.Contains(c.Args[1], "signed-by=") &&
+			strings.Contains(c.Args[1], repoFile) {
+			found = true
 		}
 	}
 	if !found {
-		t.Error("expected sh -c call that writes signed-by repo to sources list")
+		t.Error("expected sh -c pipeline that writes signed-by repo to sources list")
 	}
 }
 
@@ -192,8 +190,6 @@ func TestInstallAptGetUpdateFailure(t *testing.T) {
 	m := newMockRunner()
 	m.errors[m.key("dpkg", "-l", "nvidia-container-toolkit")] =
 		fmt.Errorf("not installed")
-	m.outputs[m.key("curl", "-fsSL", gpgKeyURL)] = "KEY"
-	m.outputs[m.key("curl", "-s", "-L", repoListURL)] = "deb https://example.com/ amd64/"
 	m.errors[m.key("apt-get", "update")] = fmt.Errorf("apt-get update failed")
 
 	inst := NewInstaller(m, newTestLogger(t))

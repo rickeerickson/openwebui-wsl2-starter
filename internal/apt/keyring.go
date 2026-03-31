@@ -49,11 +49,11 @@ func (m *Manager) SetupDockerKeyring(ctx context.Context) error {
 	}
 
 	// Add Docker repository to sources list.
-	// The actual repo line includes architecture and codename; we use a shell
-	// command to resolve them dynamically.
-	repoLine := "deb [arch=$(dpkg --print-architecture) signed-by=" + dockerKeyringPath + "] " +
-		"https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable"
-	_, err = m.Runner.Run(ctx, "sh", "-c", "echo '"+repoLine+"' > "+dockerSourcesList)
+	// The repo line includes architecture and codename resolved at runtime
+	// via shell command substitution. Double quotes allow expansion.
+	repoLine := `deb [arch=$(dpkg --print-architecture) signed-by=` + dockerKeyringPath + `] ` +
+		`https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable`
+	_, err = m.Runner.Run(ctx, "sh", "-c", `echo "`+repoLine+`" > `+dockerSourcesList)
 	if err != nil {
 		return fmt.Errorf("write docker sources list: %w", err)
 	}
