@@ -32,23 +32,23 @@ func retryOpts() exec.RetryOpts {
 }
 
 // UpdatePackages runs apt-get update, upgrade, dist-upgrade, autoremove, and
-// autoclean with retry on each step. Sets DEBIAN_FRONTEND=noninteractive via
-// env args passed to apt-get.
+// autoclean with retry on each step. Uses DEBIAN_FRONTEND=noninteractive
+// to suppress interactive prompts during upgrades.
 func (m *Manager) UpdatePackages(ctx context.Context) error {
 	m.Logger.Info("updating system packages")
 
 	commands := [][]string{
-		{"apt-get", "update"},
-		{"apt-get", "upgrade", "-y"},
-		{"apt-get", "dist-upgrade", "-y"},
-		{"apt-get", "autoremove", "-y"},
-		{"apt-get", "autoclean", "-y"},
+		{"sh", "-c", "apt-get update"},
+		{"sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get upgrade -y"},
+		{"sh", "-c", "DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y"},
+		{"sh", "-c", "apt-get autoremove -y"},
+		{"sh", "-c", "apt-get autoclean -y"},
 	}
 
 	for _, cmd := range commands {
 		_, err := m.Runner.RunWithRetry(ctx, retryOpts(), cmd[0], cmd[1:]...)
 		if err != nil {
-			return fmt.Errorf("%s: %w", cmd[0]+" "+cmd[1], err)
+			return fmt.Errorf("%s: %w", cmd[2], err)
 		}
 	}
 
@@ -57,6 +57,7 @@ func (m *Manager) UpdatePackages(ctx context.Context) error {
 }
 
 // InstallPackages installs the given packages via apt-get install -y with retry.
+// Uses DEBIAN_FRONTEND=noninteractive to suppress interactive prompts.
 func (m *Manager) InstallPackages(ctx context.Context, pkgs ...string) error {
 	if len(pkgs) == 0 {
 		return fmt.Errorf("no packages specified")
@@ -64,8 +65,11 @@ func (m *Manager) InstallPackages(ctx context.Context, pkgs ...string) error {
 
 	m.Logger.Info("installing packages: %v", pkgs)
 
-	args := append([]string{"install", "-y"}, pkgs...)
-	_, err := m.Runner.RunWithRetry(ctx, retryOpts(), "apt-get", args...)
+	shellCmd := "DEBIAN_FRONTEND=noninteractive apt-get install -y"
+	for _, pkg := range pkgs {
+		shellCmd += " " + pkg
+	}
+	_, err := m.Runner.RunWithRetry(ctx, retryOpts(), "sh", "-c", shellCmd)
 	if err != nil {
 		return fmt.Errorf("apt-get install: %w", err)
 	}

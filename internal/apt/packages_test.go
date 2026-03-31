@@ -56,16 +56,27 @@ func TestUpdatePackagesRunsAllCommands(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := []string{"update", "upgrade", "dist-upgrade", "autoremove", "autoclean"}
+	expected := []string{
+		"apt-get update",
+		"DEBIAN_FRONTEND=noninteractive apt-get upgrade -y",
+		"DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y",
+		"apt-get autoremove -y",
+		"apt-get autoclean -y",
+	}
 	if len(r.calls) != len(expected) {
 		t.Fatalf("got %d calls, want %d", len(r.calls), len(expected))
 	}
 	for i, want := range expected {
-		if r.calls[i].Name != "apt-get" {
-			t.Errorf("call %d: name = %q, want %q", i, r.calls[i].Name, "apt-get")
+		if r.calls[i].Name != "sh" {
+			t.Errorf("call %d: name = %q, want %q", i, r.calls[i].Name, "sh")
 		}
-		if r.calls[i].Args[0] != want {
-			t.Errorf("call %d: first arg = %q, want %q", i, r.calls[i].Args[0], want)
+		// Args should be ["-c", <shell command>]
+		if len(r.calls[i].Args) != 2 || r.calls[i].Args[0] != "-c" {
+			t.Errorf("call %d: args = %v, want [\"-c\", ...]", i, r.calls[i].Args)
+			continue
+		}
+		if r.calls[i].Args[1] != want {
+			t.Errorf("call %d: shell cmd = %q, want %q", i, r.calls[i].Args[1], want)
 		}
 	}
 }
@@ -83,18 +94,16 @@ func TestInstallPackagesPassesNames(t *testing.T) {
 		t.Fatalf("got %d calls, want 1", len(r.calls))
 	}
 	call := r.calls[0]
-	if call.Name != "apt-get" {
-		t.Errorf("name = %q, want %q", call.Name, "apt-get")
+	if call.Name != "sh" {
+		t.Errorf("name = %q, want %q", call.Name, "sh")
 	}
-	// Args should be: install -y vim git curl
-	wantArgs := []string{"install", "-y", "vim", "git", "curl"}
-	if len(call.Args) != len(wantArgs) {
-		t.Fatalf("args = %v, want %v", call.Args, wantArgs)
+	// Args should be: -c "DEBIAN_FRONTEND=noninteractive apt-get install -y vim git curl"
+	wantShellCmd := "DEBIAN_FRONTEND=noninteractive apt-get install -y vim git curl"
+	if len(call.Args) != 2 || call.Args[0] != "-c" {
+		t.Fatalf("args = %v, want [\"-c\", %q]", call.Args, wantShellCmd)
 	}
-	for i, want := range wantArgs {
-		if call.Args[i] != want {
-			t.Errorf("arg %d = %q, want %q", i, call.Args[i], want)
-		}
+	if call.Args[1] != wantShellCmd {
+		t.Errorf("shell cmd = %q, want %q", call.Args[1], wantShellCmd)
 	}
 }
 
@@ -157,7 +166,7 @@ func TestUpdatePackagesUsesRunWithRetry(t *testing.T) {
 
 func TestUpdatePackagesStopsOnError(t *testing.T) {
 	r := &mockRunner{errors: map[string]error{
-		"apt-get": fmt.Errorf("lock held"),
+		"sh": fmt.Errorf("lock held"),
 	}}
 	m := newTestManager(t, r)
 
