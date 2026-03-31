@@ -86,6 +86,8 @@ CACHEDIR.TAG
 # Go
 coverage.out
 *.test
+/ow
+/ow.exe
 
 # Backup files
 *~
