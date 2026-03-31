@@ -184,7 +184,7 @@ func TestInstallDockerPassesCorrectPackages(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Expect: apt-get update, apt-get install with docker packages
+	// Expect: apt-get update, sh -c "DEBIAN_FRONTEND=noninteractive apt-get install ..."
 	if len(r.calls) < 2 {
 		t.Fatalf("expected at least 2 calls, got %d", len(r.calls))
 	}
@@ -194,10 +194,10 @@ func TestInstallDockerPassesCorrectPackages(t *testing.T) {
 		t.Errorf("call 0: got %s %v, want apt-get update", r.calls[0].Name, r.calls[0].Args)
 	}
 
-	// Second: apt-get install with all docker packages
+	// Second: sh -c with DEBIAN_FRONTEND and all docker packages
 	installCall := r.calls[1]
-	if installCall.Name != "apt-get" {
-		t.Errorf("call 1: name = %q, want %q", installCall.Name, "apt-get")
+	if installCall.Name != "sh" {
+		t.Errorf("call 1: name = %q, want %q", installCall.Name, "sh")
 	}
 
 	wantPkgs := []string{"docker-ce", "docker-ce-cli", "containerd.io", "docker-buildx-plugin", "docker-compose-plugin"}
