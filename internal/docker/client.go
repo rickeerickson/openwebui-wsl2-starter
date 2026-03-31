@@ -26,10 +26,12 @@ func NewClient(runner exec.Runner, logger *logging.Logger) *Client {
 // ContainerExists returns true if a container with the given name exists
 // (running or stopped). It runs `docker inspect name`.
 func (c *Client) ContainerExists(ctx context.Context, name string) (bool, error) {
-	_, err := c.Runner.Run(ctx, "docker", "inspect", name)
+	output, err := c.Runner.Run(ctx, "docker", "inspect", name)
 	if err != nil {
-		// docker inspect exits non-zero when the container does not exist.
-		if strings.Contains(err.Error(), "failed") {
+		// docker inspect exits non-zero with "No such object" when the
+		// container does not exist. Any other error is a real failure.
+		if strings.Contains(output, "No such object") ||
+			strings.Contains(output, "No such container") {
 			return false, nil
 		}
 		return false, err
@@ -42,8 +44,10 @@ func (c *Client) ContainerExists(ctx context.Context, name string) (bool, error)
 func (c *Client) ContainerIsRunning(ctx context.Context, name string) (bool, error) {
 	out, err := c.Runner.Run(ctx, "docker", "inspect", "-f", "{{.State.Running}}", name)
 	if err != nil {
-		// Container does not exist or inspect failed.
-		if strings.Contains(err.Error(), "failed") {
+		// docker inspect exits non-zero with "No such object" when the
+		// container does not exist. Any other error is a real failure.
+		if strings.Contains(out, "No such object") ||
+			strings.Contains(out, "No such container") {
 			return false, nil
 		}
 		return false, err

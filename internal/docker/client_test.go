@@ -90,7 +90,7 @@ func TestContainerExistsTrue(t *testing.T) {
 func TestContainerExistsFalse(t *testing.T) {
 	c, m := newTestClient(t, []mockCall{
 		{wantName: "docker", wantArgs: []string{"inspect", "missing"},
-			output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+			output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 	})
 	exists, err := c.ContainerExists(context.Background(), "missing")
 	if err != nil {
@@ -165,7 +165,7 @@ func TestRemoveContainerSkipsWhenNotExists(t *testing.T) {
 	c, m := newTestClient(t, []mockCall{
 		// ContainerExists check: returns false.
 		{wantName: "docker", wantArgs: []string{"inspect", "gone"},
-			output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+			output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 	})
 	err := c.RemoveContainer(context.Background(), "gone")
 	if err != nil {
@@ -211,9 +211,9 @@ func TestStopAndRemoveCallsStopThenRemove(t *testing.T) {
 func TestStopAndRemoveSucceedsWhenContainerGone(t *testing.T) {
 	c, m := newTestClient(t, []mockCall{
 		// StopContainer -> ContainerIsRunning: inspect fails (not found).
-		{wantName: "docker", output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+		{wantName: "docker", output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 		// RemoveContainer -> ContainerExists: inspect fails (not found).
-		{wantName: "docker", output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+		{wantName: "docker", output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 	})
 	err := c.StopAndRemove(context.Background(), "gone")
 	if err != nil {
@@ -270,7 +270,7 @@ func TestEnsureRunningStopsRemovesRunsPolls(t *testing.T) {
 		// StopAndRemove -> StopContainer -> ContainerIsRunning: not running.
 		{wantName: "docker", output: "false\n", err: nil},
 		// StopAndRemove -> RemoveContainer -> ContainerExists: not found.
-		{wantName: "docker", output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+		{wantName: "docker", output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 		// RunContainer -> docker run.
 		{wantName: "docker", output: "abc123\n", err: nil},
 		// Poll -> ContainerIsRunning: true (immediate success).
@@ -307,7 +307,7 @@ func TestEnsureRunningPollsUntilRunning(t *testing.T) {
 		// StopAndRemove -> StopContainer -> ContainerIsRunning: not running.
 		{wantName: "docker", output: "false\n", err: nil},
 		// StopAndRemove -> RemoveContainer -> ContainerExists: not found.
-		{wantName: "docker", output: "", err: fmt.Errorf("command \"docker\" failed: no such container")},
+		{wantName: "docker", output: "Error: No such container: missing", err: fmt.Errorf("command \"docker\" failed: exit status 1")},
 		// RunContainer -> docker run.
 		{wantName: "docker", output: "abc123\n", err: nil},
 		// Poll 1 -> ContainerIsRunning: false.
