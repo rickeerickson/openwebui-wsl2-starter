@@ -124,7 +124,7 @@ func TestInstallRunsCurlAndShWhenMissing(t *testing.T) {
 	// We need --version to fail first time, succeed second time.
 	// Replace the mock with a stateful one.
 	sm := &statefulMockRunner{
-		mockRunner:    m,
+		mockRunner:   m,
 		versionCalls: 0,
 	}
 	mgr.Runner = sm
@@ -154,10 +154,10 @@ func (s *statefulMockRunner) Run(ctx context.Context, name string, args ...strin
 	if name == "ollama" && len(args) > 0 && args[0] == "--version" {
 		s.versionCalls++
 		if s.versionCalls == 1 {
-			s.mockRunner.calls = append(s.mockRunner.calls, mockCall{Name: name, Args: args})
+			s.calls = append(s.calls, mockCall{Name: name, Args: args})
 			return "", fmt.Errorf("not found")
 		}
-		s.mockRunner.calls = append(s.mockRunner.calls, mockCall{Name: name, Args: args})
+		s.calls = append(s.calls, mockCall{Name: name, Args: args})
 		return "ollama version 0.1.0", nil
 	}
 	return s.mockRunner.Run(ctx, name, args...)

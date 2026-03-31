@@ -108,5 +108,5 @@ func runOllamaRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("ollama not found in PATH: %w", err)
 	}
 
-	return syscall.Exec(binary, []string{"ollama", "run", model}, os.Environ())
+	return syscall.Exec(binary, []string{"ollama", "run", model}, os.Environ()) //nolint:gosec // G204: binary is from LookPath("ollama"), not user input
 }

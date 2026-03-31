@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	gpgKeyURL  = "https://nvidia.github.io/libnvidia-container/gpgkey"
+	gpgKeyURL   = "https://nvidia.github.io/libnvidia-container/gpgkey"
 	repoListURL = "https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list"
 	keyringPath = "/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
 	repoFile    = "/etc/apt/sources.list.d/nvidia-container-toolkit.list"

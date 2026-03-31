@@ -21,9 +21,9 @@ type mockCall struct {
 
 // mockRunner records calls and returns preconfigured responses.
 type mockRunner struct {
-	calls    []mockCall
-	outputs  map[string]string // key = "name arg1 arg2 ..."
-	errors   map[string]error
+	calls   []mockCall
+	outputs map[string]string // key = "name arg1 arg2 ..."
+	errors  map[string]error
 }
 
 func newMockRunner() *mockRunner {
